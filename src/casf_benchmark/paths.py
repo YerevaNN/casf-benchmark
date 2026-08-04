@@ -29,13 +29,17 @@ GEOMETRIC_LIGAND_PARTS_DIRNAME = "geometric_generation_parts"
 CHEMBL3D_MOL_CACHE_DIRNAME = "chembl3d_mols"
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+PACKAGE_ROOT = Path(__file__).resolve().parent
 DATA_ROOT = REPO_ROOT / "data"
 RESULTS_ROOT = DATA_ROOT / "results"
 MAPPING_ROOT = DATA_ROOT / "mapping"
 
+GENERATION_SCRIPT = PACKAGE_ROOT / "generation" / "conformer_sets.py"
+
 WEKA_ROOT = Path(os.environ.get("CASF_BENCHMARK_DATA_ROOT", "/mnt/weka/mbedrosian"))
 WEKA_DATA_ROOT = WEKA_ROOT / "data"
 WEKA_PHARMA_ROOT = WEKA_ROOT / "pharma_generation_analysis"
+WEKA_CODEX_ROOT = WEKA_ROOT / "codex_dir"
 
 DEFAULT_DASHBOARD_DB = RESULTS_ROOT / "casf_analysis_dashboard.sqlite"
 DEFAULT_EXTENDED_DB = RESULTS_ROOT / "extended_casf_analysis.sqlite"
@@ -59,6 +63,35 @@ DEFAULT_CHEMBL3D_INDEX_CSV = DEFAULT_CHEMBL3D_INDEX_DIR / "chembl3d_topology_smi
 
 DEFAULT_CORE_PHARMA_ROOT = WEKA_PHARMA_ROOT / "core_pb_full_dynamic_chembl_count"
 DEFAULT_REF_PHARMA_ROOT = WEKA_PHARMA_ROOT / "ref_pb_full_dynamic_chembl_count"
+DEFAULT_REFERENCE_DATASETS_CORE_ROOT = WEKA_PHARMA_ROOT / "reference_datasets" / "core"
+DEFAULT_REFERENCE_DATASETS_REF_ROOT = WEKA_PHARMA_ROOT / "reference_datasets" / "ref"
+
+DEFAULT_QWEN_GENERATION_ROOT = WEKA_CODEX_ROOT / "qwen_gens"
+DEFAULT_QWEN_REF_GENERATION_ROOT = WEKA_CODEX_ROOT / "qwen" / "generations" / "casf16_ref_qwen_1k"
+DEFAULT_WEKA_DASHBOARD_DB = WEKA_PHARMA_ROOT / "casf_analysis_dashboard.sqlite"
+DEFAULT_WEKA_MASTER_CSV = WEKA_PHARMA_ROOT / "casf_analysis_master.csv"
+DEFAULT_WEKA_PER_LIGAND_LONG_CSV = WEKA_PHARMA_ROOT / "casf_per_ligand_long.csv"
+DEFAULT_WEKA_ANALYSIS_SOURCES_CONFIG = REPO_ROOT / "config" / "casf_analysis_sources.weka.yaml"
+WEKA_LOQI_CORE_ROOT = WEKA_CODEX_ROOT / "loqi" / "generations" / "casf16_core_loqi_1k"
+WEKA_LOQI_REF_ROOT = WEKA_CODEX_ROOT / "loqi" / "generations" / "casf16_ref_loqi_1k"
+WEKA_NEXTMOL_DMT_L_CORE_ROOT = (
+    WEKA_CODEX_ROOT / "nextmol_dmt_l" / "generations" / "casf16_core_nextmol_dmt_l_1k"
+)
+WEKA_NEXTMOL_DMT_L_REF_ROOT = (
+    WEKA_CODEX_ROOT / "nextmol_dmt_l" / "generations" / "casf16_ref_nextmol_dmt_l_1k"
+)
+WEKA_TORSIONAL_DIFFUSION_CORE_ROOT = (
+    WEKA_CODEX_ROOT / "torsional_diffusion" / "generations" / "casf16_core_torsional_diffusion_1k"
+)
+WEKA_TORSIONAL_DIFFUSION_REF_ROOT = (
+    WEKA_CODEX_ROOT / "torsional_diffusion" / "generations" / "casf16_ref_torsional_diffusion_1k"
+)
+WEKA_MCF_DRUGS_L_CORE_ROOT = (
+    WEKA_CODEX_ROOT / "mcf_drugs_l" / "generations" / "casf16_core_mcf_drugs_l_1k"
+)
+WEKA_MCF_DRUGS_L_REF_ROOT = (
+    WEKA_CODEX_ROOT / "mcf_drugs_l" / "generations" / "casf16_ref_mcf_drugs_l_1k"
+)
 
 DEFAULT_CONFORMER_SETS_ROOT = DEFAULT_CORE_PHARMA_ROOT
 DEFAULT_GENERATION_DIR = DEFAULT_CORE_PHARMA_ROOT / GENERATION_SUBDIR

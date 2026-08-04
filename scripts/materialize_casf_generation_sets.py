@@ -23,15 +23,14 @@ from casf_benchmark.paths import (
     DEFAULT_CHEMBL_DATASET_ROOT,
     DEFAULT_CHEMBL_MAP_CSV,
     DEFAULT_CORE_LIGAND_DIR,
+    DEFAULT_QWEN_GENERATION_ROOT,
 )
 from casf_benchmark.generation.conformer_sets import positive_int
-
-DEFAULT_QWEN_ROOT = Path("/mnt/weka/mbedrosian/codex_dir/qwen_gens")
 
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", type=Path, default=DEFAULT_QWEN_ROOT)
+    parser.add_argument("--root", type=Path, default=DEFAULT_QWEN_GENERATION_ROOT)
     parser.add_argument("--generation-dir", type=Path, default=None)
     parser.add_argument("--source-manifest", type=Path, default=None)
     parser.add_argument("--output-manifest", type=Path, default=None)

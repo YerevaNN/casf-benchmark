@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run generate_casf_smiles_conformer_sets.py in parallel over molecule offsets."""
+"""Run conformer generation in parallel over molecule offsets."""
 
 from __future__ import annotations
 
@@ -14,13 +14,15 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "src"))
-DEFAULT_GENERATOR = REPO_ROOT / "src/casf_benchmark/generate_casf_smiles_conformer_sets.py"
 from casf_benchmark.paths import (
     DEFAULT_CHEMBL_DATASET_ROOT,
     DEFAULT_CHEMBL_MAP_CSV,
     DEFAULT_CORE_LIGAND_DIR,
     DEFAULT_CORE_PHARMA_ROOT,
+    GENERATION_SCRIPT,
 )
+
+DEFAULT_GENERATOR = GENERATION_SCRIPT
 
 DEFAULT_LIGAND_DIR = DEFAULT_CORE_LIGAND_DIR
 DEFAULT_TOPOLOGY_ROOT = DEFAULT_CHEMBL_DATASET_ROOT / "topologies"
@@ -170,7 +172,7 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "generator_args",
         nargs=argparse.REMAINDER,
-        help="Extra args passed to generate_casf_smiles_conformer_sets.py",
+        help="Extra args passed to conformer_sets.py",
     )
     return parser
 

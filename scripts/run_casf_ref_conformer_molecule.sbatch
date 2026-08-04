@@ -41,7 +41,7 @@ else
   exit 127
 fi
 
-GENERATOR="${REPO_ROOT}/src/casf_benchmark/generate_casf_smiles_conformer_sets.py"
+GENERATOR="${REPO_ROOT}/src/casf_benchmark/generation/conformer_sets.py"
 OFFSET=$((MOLECULE_OFFSET_BASE + SLURM_ARRAY_TASK_ID))
 MANIFEST_PARTS="${OUTPUT_DIR}/generation/manifest_parts"
 

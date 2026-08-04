@@ -28,19 +28,32 @@ try:
         prepare_torsion_ref_mol,
     )
     from casf_benchmark.generation.conformer_sets import get_rotatable_torsions
+    from casf_benchmark.paths import (
+        DEFAULT_CASF16_DATA,
+        DEFAULT_CASF_LIGAND_DIR,
+        DEFAULT_CHEMBL3D_INDEX_CSV,
+        DEFAULT_CHEMBL_DATASET_ROOT,
+        DEFAULT_CHEMBL_MAP_CSV,
+        WEKA_DATA_ROOT,
+    )
 except ImportError:
     prepare_torsion_ref_mol = None
     get_rotatable_torsions = None
-
-
-DEFAULT_CASF16_DIR = Path("/mnt/weka/mbedrosian/data/casf16/CASF16")
-DEFAULT_LIGAND_DIR = DEFAULT_CASF16_DIR / "ligands"
-DEFAULT_CHEMBL_INDEX = Path(
-    "/mnt/weka/mbedrosian/data/chembl3d_index/chembl3d_topology_smiles_index.csv"
-)
-DEFAULT_DATA_DIR = Path("/mnt/weka/mbedrosian/data/casf16")
-DEFAULT_OUTPUT_CSV = DEFAULT_DATA_DIR / "casf16_core_chembl3d_exact_intersection.csv"
-DEFAULT_TOPOLOGY_ROOT = Path("/mnt/weka/mbedrosian/data/chembl3d/topologies")
+    DEFAULT_CASF16_DATA = Path("/mnt/weka/mbedrosian/data/casf16/CASF16")
+    DEFAULT_LIGAND_DIR = DEFAULT_CASF16_DATA / "ligands"
+    DEFAULT_CHEMBL_INDEX = Path(
+        "/mnt/weka/mbedrosian/data/chembl3d_index/chembl3d_topology_smiles_index.csv"
+    )
+    DEFAULT_DATA_DIR = Path("/mnt/weka/mbedrosian/data/casf16")
+    DEFAULT_OUTPUT_CSV = DEFAULT_DATA_DIR / "casf16_core_chembl3d_exact_intersection.csv"
+    DEFAULT_TOPOLOGY_ROOT = Path("/mnt/weka/mbedrosian/data/chembl3d/topologies")
+else:
+    DEFAULT_CASF16_DIR = DEFAULT_CASF16_DATA
+    DEFAULT_LIGAND_DIR = DEFAULT_CASF_LIGAND_DIR
+    DEFAULT_CHEMBL_INDEX = DEFAULT_CHEMBL3D_INDEX_CSV
+    DEFAULT_DATA_DIR = WEKA_DATA_ROOT / "casf16"
+    DEFAULT_OUTPUT_CSV = DEFAULT_CHEMBL_MAP_CSV
+    DEFAULT_TOPOLOGY_ROOT = DEFAULT_CHEMBL_DATASET_ROOT / "topologies"
 
 GROUP_RE = re.compile(r"^\d{3}$")
 

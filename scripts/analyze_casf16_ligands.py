@@ -24,8 +24,10 @@ else:
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-DEFAULT_CASF16_DIR = Path("/mnt/weka/mbedrosian/data/casf16/CASF16")
-DEFAULT_LIGAND_DIR = DEFAULT_CASF16_DIR / "ligands"
+from casf_benchmark.paths import DEFAULT_CASF16_DATA, DEFAULT_CASF_LIGAND_DIR
+
+DEFAULT_CASF16_DIR = DEFAULT_CASF16_DATA
+DEFAULT_LIGAND_DIR = DEFAULT_CASF_LIGAND_DIR
 DEFAULT_OUTPUT_CSV = DEFAULT_CASF16_DIR / "ligand_descriptors.csv"
 DEFAULT_STATS_MD = DEFAULT_CASF16_DIR / "ligand_descriptor_stats.md"
 

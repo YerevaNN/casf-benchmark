@@ -30,7 +30,7 @@ else
   exit 127
 fi
 
-GENERATOR="${REPO_ROOT}/src/casf_benchmark/generate_casf_smiles_conformer_sets.py"
+GENERATOR="${REPO_ROOT}/src/casf_benchmark/generation/conformer_sets.py"
 
 exec "${PYTHON}" -u "${GENERATOR}" \
   --chembl_map_csv "${CHEMBL_MAP_CSV}" \
