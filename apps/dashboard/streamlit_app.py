@@ -236,6 +236,55 @@ EXTENDED_TABLES = {
     },
 }
 
+DEFAULT_COL_MIN_WIDTH_PX = 112
+METHOD_COL_MIN_WIDTH_PX = 220
+TABLE_HEIGHT_PX = 520
+
+STICKY_TABLE_CSS = """
+<style>
+.casf-table-wrap {
+  overflow: auto;
+  max-height: 520px;
+  margin-bottom: 0.5rem;
+  border: 1px solid #e6e9ef;
+  border-radius: 0.5rem;
+}
+.casf-table {
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+  width: max-content;
+  min-width: 100%;
+}
+.casf-table th,
+.casf-table td {
+  padding: 0.45rem 0.65rem;
+  border-bottom: 1px solid #e6e9ef;
+  border-right: 1px solid #e6e9ef;
+  white-space: nowrap;
+  background: #ffffff;
+}
+.casf-table th {
+  background: #f0f2f6;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+.casf-table td.sticky-col,
+.casf-table th.sticky-col {
+  position: sticky;
+  z-index: 1;
+}
+.casf-table th.sticky-col {
+  z-index: 3;
+}
+.casf-table .sticky-col-last {
+  box-shadow: 4px 0 6px -2px rgba(49, 51, 63, 0.18);
+}
+</style>
+"""
+
 
 @st.cache_data(show_spinner=False)
 def load_table(db_path: str, table: str, db_mtime_ns: int) -> pd.DataFrame:
@@ -279,14 +328,86 @@ def sort_rows(frame: pd.DataFrame) -> pd.DataFrame:
     return out.drop(columns=["_row_type_order", "_tier_order"]).reset_index(drop=True)
 
 
+def _escape_html(value: object) -> str:
+    text = "" if value is None or (isinstance(value, float) and pd.isna(value)) else str(value)
+    return (
+        text.replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace('"', "&quot;")
+    )
+
+
+def _column_min_width(column: str) -> int:
+    return METHOD_COL_MIN_WIDTH_PX if column == "method" else DEFAULT_COL_MIN_WIDTH_PX
+
+
+def _sticky_through_method(columns: list[str]) -> list[int]:
+    if "method" not in columns:
+        return []
+    return list(range(columns.index("method") + 1))
+
+
+def _sticky_left_offsets(columns: list[str], sticky_indices: list[int]) -> dict[int, int]:
+    offsets: dict[int, int] = {}
+    left = 0
+    for index, column in enumerate(columns):
+        if index in sticky_indices:
+            offsets[index] = left
+        left += _column_min_width(column)
+    return offsets
+
+
+def _render_sticky_table(frame: pd.DataFrame, columns: list[str], height_px: int = TABLE_HEIGHT_PX) -> None:
+    sticky_indices = set(_sticky_through_method(columns))
+    if not sticky_indices:
+        st.dataframe(frame, use_container_width=True, height=height_px)
+        return
+
+    offsets = _sticky_left_offsets(columns, sticky_indices)
+    last_sticky = max(sticky_indices)
+    rows = frame.to_dict(orient="records")
+
+    header_cells = []
+    for index, column in enumerate(columns):
+        classes = ["sticky-col"] if index in sticky_indices else []
+        if index == last_sticky:
+            classes.append("sticky-col-last")
+        class_attr = f' class="{" ".join(classes)}"' if classes else ""
+        style = f' style="left: {offsets[index]}px; min-width: {_column_min_width(column)}px;"' if index in sticky_indices else ""
+        header_cells.append(f"<th{class_attr}{style}>{_escape_html(column)}</th>")
+
+    body_rows = []
+    for row in rows:
+        cells = []
+        for index, column in enumerate(columns):
+            classes = ["sticky-col"] if index in sticky_indices else []
+            if index == last_sticky:
+                classes.append("sticky-col-last")
+            class_attr = f' class="{" ".join(classes)}"' if classes else ""
+            style = f' style="left: {offsets[index]}px; min-width: {_column_min_width(column)}px;"' if index in sticky_indices else ""
+            cells.append(f"<td{class_attr}{style}>{_escape_html(row.get(column))}</td>")
+        body_rows.append(f"<tr>{''.join(cells)}</tr>")
+
+    html = f"""
+    <div class="casf-table-wrap" style="max-height: {height_px}px;">
+      <table class="casf-table">
+        <thead><tr>{''.join(header_cells)}</tr></thead>
+        <tbody>{''.join(body_rows)}</tbody>
+      </table>
+    </div>
+    """
+    st.markdown(html, unsafe_allow_html=True)
+
+
 def display_table(frame: pd.DataFrame, columns: list[str], name: str) -> None:
     cols = [column for column in columns if column in frame.columns]
     if not cols:
-        st.dataframe(frame, use_container_width=True, height=520)
         data = frame
+        st.dataframe(data, use_container_width=True, height=TABLE_HEIGHT_PX)
     else:
         data = frame[cols]
-        st.dataframe(data, use_container_width=True, height=520)
+        _render_sticky_table(data, cols)
     st.download_button(
         f"Download {name} CSV",
         data=data.to_csv(index=False).encode("utf-8"),
@@ -382,6 +503,7 @@ def render_extended_analysis(db_path: Path, table_names: set[str]) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="CASF Analysis Dashboard", layout="wide")
+    st.markdown(STICKY_TABLE_CSS, unsafe_allow_html=True)
     st.title("CASF Analysis Dashboard")
 
     db_default = Path(os.environ.get("CASF_DASHBOARD_DB", str(DEFAULT_DB)))
