@@ -35,6 +35,18 @@ Bundled artifacts:
 
 Large files may use Git LFS — run `git lfs pull` after clone if needed.
 
+## Public web dashboard (Streamlit Cloud)
+
+The live app is deployed from a **personal mirror** ([menuab/casf-benchmark](https://github.com/menuab/casf-benchmark)) because YerevaNN org repos cannot authorize Streamlit’s GitHub App.
+
+**Sync is not automatic** unless you use the mirror push script or enable the optional GitHub Action. After pushing to YerevaNN only, run:
+
+```bash
+./scripts/push_with_mirror.sh
+```
+
+Full setup: [docs/deployment.md](docs/deployment.md).
+
 ## Full analysis environment
 
 For data prep, generation, materialization, analysis, and dashboard rebuild:

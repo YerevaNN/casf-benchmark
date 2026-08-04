@@ -1,0 +1,31 @@
+# Mirror main to menuab/casf-benchmark for Streamlit Community Cloud.
+#
+# Enable by adding repo secret PERSONAL_MIRROR_PAT:
+#   GitHub → menuab → Settings → Developer settings → PAT (classic, repo scope)
+#   YerevaNN/casf-benchmark → Settings → Secrets → PERSONAL_MIRROR_PAT
+#
+# Until the secret exists, use: ./scripts/push_with_mirror.sh
+
+name: Mirror to personal repo
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  mirror:
+    if: ${{ secrets.PERSONAL_MIRROR_PAT != '' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to menuab/casf-benchmark
+        env:
+          PAT: ${{ secrets.PERSONAL_MIRROR_PAT }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git remote add personal "https://x-access-token:${PAT}@github.com/menuab/casf-benchmark.git"
+          git push personal HEAD:main --force
