@@ -3,21 +3,39 @@ from __future__ import annotations
 from pathlib import Path
 
 from casf_benchmark.paths import (
-    DEFAULT_CONFORMER_SETS_ROOT,
-    DEFAULT_GENERATION_DIR,
+    DEFAULT_RUNS_ROOT,
+    GENERATION_SCRIPT,
     resolve_generation_dir,
     resolve_geometric_paths,
     resolve_paths,
 )
 
 
-def test_resolve_paths_for_current_dataset_layout() -> None:
-    paths = resolve_paths(DEFAULT_CONFORMER_SETS_ROOT)
-    assert paths.generation_dir == DEFAULT_GENERATION_DIR
-    assert paths.analysis_dir == DEFAULT_CONFORMER_SETS_ROOT / "analysis"
+def test_generation_script_exists_in_repo() -> None:
+    assert GENERATION_SCRIPT.is_file()
+    assert GENERATION_SCRIPT.name == "conformer_sets.py"
+
+
+def test_resolve_paths_for_bundled_run_layout() -> None:
+    root = DEFAULT_RUNS_ROOT / "qwen_core"
+    paths = resolve_paths(root)
+    assert paths.generation_dir == root / "generation"
+    assert paths.analysis_dir == root / "analysis"
     assert paths.tables_dir == paths.analysis_dir / "tables"
     assert paths.cache_dir == paths.analysis_dir / "cache"
     assert paths.manifest_path.name == "manifest.tsv"
+    assert (paths.tables_dir / "geometric_per_ligand_long.csv").exists()
+
+
+def test_resolve_paths_for_weka_generation_layout(tmp_path: Path) -> None:
+    root = tmp_path / "core_pb_full_dynamic_chembl_count"
+    generation = root / "generation"
+    generation.mkdir(parents=True)
+    (generation / "manifest.tsv").write_text("mol_id\tgeneration_method\tstatus\n", encoding="utf-8")
+
+    paths = resolve_paths(root)
+    assert paths.generation_dir == generation
+    assert paths.analysis_dir == root / "analysis"
     assert paths.manifest_path.exists()
 
 
