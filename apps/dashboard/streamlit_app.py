@@ -271,16 +271,15 @@ STICKY_TABLE_CSS = """
   top: 0;
   z-index: 2;
 }
-.casf-table td.sticky-col,
-.casf-table th.sticky-col {
+.casf-table td.sticky-method,
+.casf-table th.sticky-method {
   position: sticky;
+  left: 0;
   z-index: 1;
-}
-.casf-table th.sticky-col {
-  z-index: 3;
-}
-.casf-table .sticky-col-last {
   box-shadow: 4px 0 6px -2px rgba(49, 51, 63, 0.18);
+}
+.casf-table th.sticky-method {
+  z-index: 4;
 }
 </style>
 """
@@ -342,51 +341,82 @@ def _column_min_width(column: str) -> int:
     return METHOD_COL_MIN_WIDTH_PX if column == "method" else DEFAULT_COL_MIN_WIDTH_PX
 
 
-def _sticky_through_method(columns: list[str]) -> list[int]:
-    if "method" not in columns:
-        return []
-    return list(range(columns.index("method") + 1))
+def _apply_table_view_controls(data: pd.DataFrame, cols: list[str], name: str) -> tuple[pd.DataFrame, list[str]]:
+    """Let users hide columns and filter rows before rendering."""
+    with st.expander("Columns & rows", expanded=False):
+        visible = st.multiselect(
+            "Visible columns",
+            cols,
+            default=cols,
+            key=f"{name}_visible_cols",
+        )
+        visible = [column for column in cols if column in visible]
+        if not visible:
+            st.warning("Select at least one column.")
+            visible = cols
 
+        filtered = data
+        if "method" in filtered.columns:
+            methods = sorted(filtered["method"].dropna().astype(str).unique())
+            if methods:
+                selected_methods = st.multiselect(
+                    "Methods (rows)",
+                    methods,
+                    default=methods,
+                    key=f"{name}_methods",
+                )
+                filtered = filtered[filtered["method"].astype(str).isin(selected_methods)]
+        elif "display_label" in filtered.columns:
+            labels = sorted(filtered["display_label"].dropna().astype(str).unique())
+            if labels:
+                selected_labels = st.multiselect(
+                    "Labels (rows)",
+                    labels,
+                    default=labels,
+                    key=f"{name}_display_labels",
+                )
+                filtered = filtered[filtered["display_label"].astype(str).isin(selected_labels)]
 
-def _sticky_left_offsets(columns: list[str], sticky_indices: list[int]) -> dict[int, int]:
-    offsets: dict[int, int] = {}
-    left = 0
-    for index, column in enumerate(columns):
-        if index in sticky_indices:
-            offsets[index] = left
-        left += _column_min_width(column)
-    return offsets
+        if "stratum" in filtered.columns and filtered["stratum"].nunique() > 1:
+            strata = sorted(filtered["stratum"].dropna().astype(str).unique())
+            selected_strata = st.multiselect(
+                "Strata (rows)",
+                strata,
+                default=strata,
+                key=f"{name}_strata",
+            )
+            filtered = filtered[filtered["stratum"].astype(str).isin(selected_strata)]
+
+        if "mol_id" in filtered.columns:
+            mol_filter = st.text_input(
+                "Filter mol_id (substring)",
+                key=f"{name}_mol_id_filter",
+            )
+            if mol_filter.strip():
+                filtered = filtered[
+                    filtered["mol_id"].astype(str).str.contains(mol_filter.strip(), case=False, na=False)
+                ]
+
+    return filtered.reset_index(drop=True), visible
 
 
 def _render_sticky_table(frame: pd.DataFrame, columns: list[str], height_px: int = TABLE_HEIGHT_PX) -> None:
-    sticky_indices = set(_sticky_through_method(columns))
-    if not sticky_indices:
-        st.dataframe(frame, use_container_width=True, height=height_px)
-        return
-
-    offsets = _sticky_left_offsets(columns, sticky_indices)
-    last_sticky = max(sticky_indices)
+    method_index = columns.index("method") if "method" in columns else None
     rows = frame.to_dict(orient="records")
 
     header_cells = []
     for index, column in enumerate(columns):
-        classes = ["sticky-col"] if index in sticky_indices else []
-        if index == last_sticky:
-            classes.append("sticky-col-last")
-        class_attr = f' class="{" ".join(classes)}"' if classes else ""
-        style = f' style="left: {offsets[index]}px; min-width: {_column_min_width(column)}px;"' if index in sticky_indices else ""
-        header_cells.append(f"<th{class_attr}{style}>{_escape_html(column)}</th>")
+        class_attr = ' class="sticky-method"' if index == method_index else ""
+        width_style = f' style="min-width: {_column_min_width(column)}px;"'
+        header_cells.append(f"<th{class_attr}{width_style}>{_escape_html(column)}</th>")
 
     body_rows = []
     for row in rows:
         cells = []
         for index, column in enumerate(columns):
-            classes = ["sticky-col"] if index in sticky_indices else []
-            if index == last_sticky:
-                classes.append("sticky-col-last")
-            class_attr = f' class="{" ".join(classes)}"' if classes else ""
-            style = f' style="left: {offsets[index]}px; min-width: {_column_min_width(column)}px;"' if index in sticky_indices else ""
-            cells.append(f"<td{class_attr}{style}>{_escape_html(row.get(column))}</td>")
+            class_attr = ' class="sticky-method"' if index == method_index else ""
+            width_style = f' style="min-width: {_column_min_width(column)}px;"'
+            cells.append(f"<td{class_attr}{width_style}>{_escape_html(row.get(column))}</td>")
         body_rows.append(f"<tr>{''.join(cells)}</tr>")
 
     html = f"""
@@ -406,8 +436,11 @@ def display_table(frame: pd.DataFrame, columns: list[str], name: str) -> None:
         data = frame
         st.dataframe(data, use_container_width=True, height=TABLE_HEIGHT_PX)
     else:
-        data = frame[cols]
-        _render_sticky_table(data, cols)
+        data, visible_cols = _apply_table_view_controls(frame[cols], cols, name)
+        if "method" in visible_cols:
+            _render_sticky_table(data, visible_cols)
+        else:
+            st.dataframe(data, use_container_width=True, height=TABLE_HEIGHT_PX)
     st.download_button(
         f"Download {name} CSV",
         data=data.to_csv(index=False).encode("utf-8"),
