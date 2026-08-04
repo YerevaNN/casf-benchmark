@@ -62,13 +62,30 @@ python scripts/analyze_casf_conformer_sets.py ...
 
 ### Cluster data
 
-Production CASF16 MOL2 ligands, ChEMBL3D zarr/topologies, and raw generation SDFs live on shared storage (not in this repo). On the analysis cluster:
+Production CASF16 MOL2 ligands, ChEMBL3D zarr/topologies, and **pre-generated conformer SDF pools** live on shared storage (not in this repo). On the analysis cluster:
 
 ```bash
 export CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian
 ```
 
 Use `config/casf_analysis_sources.weka.yaml` when rebuilding from Weka run roots instead of bundled `data/results/runs/`.
+
+Full path reference (SDF run roots per generator, reference inputs, dashboard artifacts): [weka_data_paths.md](weka_data_paths.md).
+
+**Cluster workflow (clone → ingest new Qwen gens → rebuild dashboard):** [cluster_quickstart.md](cluster_quickstart.md).
+
+### Generator entry point
+
+RDKit/torsion baseline generation is implemented in `src/casf_benchmark/generation/conformer_sets.py`:
+
+```bash
+export PYTHONPATH=src
+python -m casf_benchmark.generation.conformer_sets --help
+# or
+python src/casf_benchmark/generation/conformer_sets.py --help
+```
+
+Slurm wrappers and `scripts/launch_casf_conformer_sets_parallel.py` invoke this script. Default output roots are under `/mnt/weka/mbedrosian/pharma_generation_analysis/` (see [weka_data_paths.md](weka_data_paths.md)).
 
 ## Git LFS
 

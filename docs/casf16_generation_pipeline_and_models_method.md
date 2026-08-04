@@ -47,14 +47,14 @@ After materialization the analyzer expects tiered methods `{source_method}_fixed
 
 ### Shared cluster data (optional regeneration)
 
-For full pipeline reruns on the analysis cluster, external data lives on Weka (not in the git clone):
+For full pipeline reruns on the analysis cluster, external data lives on Weka (not in the git clone). **Pre-generated SDF pools, manifests, and MOL2 inputs** are documented in [weka_data_paths.md](weka_data_paths.md).
 
 | Role | Path |
 | --- | --- |
 | CASF + intersection CSVs | `/mnt/weka/mbedrosian/data/casf16/` |
 | ChEMBL3D topologies / zarr | `/mnt/weka/mbedrosian/data/chembl3d/` |
-| RDKit/torsion generation output | `/mnt/weka/mbedrosian/pharma_generation_analysis/{core,ref}_pb_full_dynamic_chembl_count/` |
-| External ML raw + materialized pools | `/mnt/weka/mbedrosian/codex_dir/` |
+| RDKit/torsion generation output (SDFs) | `/mnt/weka/mbedrosian/pharma_generation_analysis/{core,ref}_pb_full_dynamic_chembl_count/` |
+| External ML raw + materialized pools (SDFs) | `/mnt/weka/mbedrosian/codex_dir/` |
 | Dashboard SQLite | `/mnt/weka/mbedrosian/pharma_generation_analysis/casf_analysis_dashboard.sqlite` |
 
 Complete data preparation (mapping CSV, intersection ligand directories) is in [casf16_chembl3d_exact_match_method.md](casf16_chembl3d_exact_match_method.md).
@@ -99,7 +99,7 @@ Full procedural detail: [casf16_chembl3d_conformer_generation_method.md](casf16_
 ```bash
 cd /home/mbedrosian/code/casf-benchmark
 export PYTHONPATH=src
-$PYTHON src/casf_benchmark/generate_casf_smiles_conformer_sets.py \
+$PYTHON src/casf_benchmark/generation/conformer_sets.py \
   --chembl_map_csv /mnt/weka/mbedrosian/data/casf16/casf16_core_chembl3d_exact_intersection.csv \
   --ligand_dir /mnt/weka/mbedrosian/data/casf16/CASF16/core_chembl3d_exact_intersection_ligands \
   --chembl3d_topology_root /mnt/weka/mbedrosian/data/chembl3d/topologies \
@@ -164,10 +164,19 @@ Full materialization reference: [casf16_materialize_generation_sets_method.md](c
 
 ### 3. Qwen variants (in-house)
 
-Qwen CASF inference is documented separately when added. Raw pools are expected under `/mnt/weka/mbedrosian/codex_dir/qwen_gens`. Materialize all untiered methods in the manifest:
+Qwen CASF inference is documented separately when added.
+
+| Cohort | Raw pool root (Weka) |
+| --- | --- |
+| Core | `/mnt/weka/mbedrosian/codex_dir/qwen_gens` |
+| Ref | `/mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k` |
+
+**Recommended cluster workflow:** [cluster_quickstart.md](cluster_quickstart.md) (`ingest_external_generation.sh` + `rebuild_dashboard_weka.sh`).
+
+Core materialization example:
 
 ```bash
-cd /home/mbedrosian/code/casf-benchmark
+cd casf-benchmark
 export PYTHONPATH=src
 $PYTHON scripts/materialize_casf_generation_sets.py \
   --root /mnt/weka/mbedrosian/codex_dir/qwen_gens \
@@ -175,7 +184,7 @@ $PYTHON scripts/materialize_casf_generation_sets.py \
   --ligand-dir /mnt/weka/mbedrosian/data/casf16/CASF16/core_chembl3d_exact_intersection_ligands
 ```
 
-Restrict to one checkpoint with `--method qwen_4b_bigdata` (repeat per variant as needed).
+Ref: same command with ref paths (see [weka_data_paths.md](weka_data_paths.md)). Restrict to one checkpoint with `--method qwen_4b_bigdata` (repeat per variant as needed).
 
 ### 4. After generation
 
@@ -218,7 +227,7 @@ All dashboard generators expose three tiers per family:
 - **Dynamic** — a random subset of size `max(1, −20 + 22 × rotatable_bonds)`, capped by the fixed pool.
 - **ChEMBL-count** — a random subset of size equal to the ChEMBL3D conformer count for that molecule, capped by the fixed pool.
 
-For RDKit/torsion baselines, tier subsampling and PoseBusters-once validation are applied inside `generate_casf_smiles_conformer_sets.py`. For external and Qwen generators, raw 1000-conformer pools are normalized into the three tiers by `scripts/materialize_casf_generation_sets.py`; see [casf16_materialize_generation_sets_method.md](casf16_materialize_generation_sets_method.md).
+For RDKit/torsion baselines, tier subsampling and PoseBusters-once validation are applied inside `src/casf_benchmark/generation/conformer_sets.py`. For external and Qwen generators, raw 1000-conformer pools are normalized into the three tiers by `scripts/materialize_casf_generation_sets.py`; see [casf16_materialize_generation_sets_method.md](casf16_materialize_generation_sets_method.md).
 
 ### Dashboard generator families
 
@@ -232,15 +241,15 @@ For RDKit/torsion baselines, tier subsampling and PoseBusters-once validation ar
 | `nextmol_dmt_l_raw` | NextMol DMT-L | yes | yes |
 | `torsional_diffusion_raw` | Torsional Diffusion | yes | yes |
 | `mcf_drugs_l_raw` | MCF drugs-L | yes | yes |
-| `qwen_*` (10 variants) | Qwen (size/data/tokenizer suffix) | yes | no |
+| `qwen_*` (10 variants) | Qwen (size/data/tokenizer suffix) | yes | yes (ref root configured; ingest when inference completes) |
 
-As of the current dashboard configuration, Qwen checkpoints are evaluated on the core cohort only. All other learned generators have both core and ref runs under `/mnt/weka/mbedrosian/codex_dir/`.
+Qwen **core** results are in the bundled dashboard. Qwen **ref** uses the same checkpoint names under `/mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k` — see [cluster_quickstart.md](cluster_quickstart.md).
 
 ---
 
 ## In-House Classical Baselines
 
-These four families are implemented in `src/casf_benchmark/generate_casf_smiles_conformer_sets.py`. Full procedural detail is in [casf16_chembl3d_conformer_generation_method.md](casf16_chembl3d_conformer_generation_method.md).
+These four families are implemented in `src/casf_benchmark/generation/conformer_sets.py`. Full procedural detail is in [casf16_chembl3d_conformer_generation_method.md](casf16_chembl3d_conformer_generation_method.md).
 
 ### RDKit random (raw and minimized)
 
@@ -394,7 +403,7 @@ All Qwen variants are trained in-house by continued pretraining (chemical domain
 | `fsq` | GEOM-DRUGS (+ FSQ tokenizer) | Same GEOM-DRUGS data but uses the in-house **FSQ (finite scalar quantization) tokenizer** for coordinate-aware tokenization instead of plain enriched-SMILES decimal coordinates. |
 | `fsq_bigdata_pretrain` | OMol → GEOM-DRUGS (+ FSQ) | FSQ tokenizer with OMol pretraining followed by GEOM-DRUGS fine-tuning. |
 
-### Dashboard Qwen catalog (core only)
+### Dashboard Qwen catalog
 
 | Family ID | Display label |
 | --- | --- |
@@ -410,13 +419,15 @@ All Qwen variants are trained in-house by continued pretraining (chemical domain
 | `qwen_4b_bigdata` | Qwen 4B bigdata |
 | `qwen_4b_revisited` | Qwen 4B revisited |
 
+Same `method_prefix` values are used for core and ref; cohort is determined by run root and `--ligand-set`.
+
 **Method (inference).** Qwen models autoregressively generate enriched SMILES strings conditioned on a 2D SMILES prompt; coordinates are decoded back to RDKit molecules with `decode_cartesian_v2`. For CASF, models receive intersection ligand SMILES (from the mapping table) and produce conformer pools that are tier-normalized like other external generators.
 
 **Compute.** Training runs on the project's H100/A100 TorchTitan fleet; exact GPU-hours vary by size and data variant. Generation for CASF is CPU/GPU mixed depending on checkpoint serving setup.
 
-**Role in the benchmark.** Qwen variants test whether LM-style 3D coordinate prediction trained on GEOM-scale (or OMol-scale) data can recover **CASF crystal poses** on the core panel. Internal core-set analyses report that `bigdata` variants achieve the strongest bound-pose recovery among learned generators, while FSQ and OMol-pretrain variants trade off validity and diversity differently. Ref-cohort Qwen runs are planned but not yet loaded in the dashboard.
+**Role in the benchmark.** Qwen variants test whether LM-style 3D coordinate prediction trained on GEOM-scale (or OMol-scale) data can recover **CASF crystal poses**. Core results are bundled in the git clone; ref results are ingested from Weka when available.
 
-**CASF deployment.** Raw and normalized outputs under `/mnt/weka/mbedrosian/codex_dir/qwen_gens`; tier materialization via `scripts/materialize_casf_generation_sets.py`.
+**CASF deployment.** Core: `/mnt/weka/mbedrosian/codex_dir/qwen_gens`. Ref: `/mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k`. Tier materialization via `scripts/materialize_casf_generation_sets.py` or `scripts/ingest_external_generation.sh`.
 
 ---
 

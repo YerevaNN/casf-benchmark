@@ -143,7 +143,7 @@ export PYTHONPATH=src
 
 Optional overrides: `--chembl-index`, `--topology-root`.
 
-**Dependencies.** RDKit; `casf_benchmark.chembl3d.loader` and `generate_casf_smiles_conformer_sets` (rotatable-torsion helper). CPU only.
+**Dependencies.** RDKit; `casf_benchmark.chembl3d.loader` and `casf_benchmark.generation.conformer_sets` (rotatable-torsion helper). CPU only.
 
 **Console diagnostics to retain:** `casf_ligands_processed`, `exact_matched_ligands`, `excluded_*` counts and ligand lists.
 

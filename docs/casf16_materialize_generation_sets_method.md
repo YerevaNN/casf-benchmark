@@ -4,7 +4,7 @@
 
 This document describes `scripts/materialize_casf_generation_sets.py` and the library implementation in `src/casf_benchmark/casf_generation_normalizer.py`. These tools convert **raw fixed-pool conformer outputs** from external learned generators (LOQI, NExT-Mol DMT-L, Torsional Diffusion, MCF, Qwen, etc.) into the same **three-tier, PoseBusters-validated layout** that the in-house RDKit generator produces directly.
 
-RDKit/torsion baselines do not use this step; they emit `{method}_{fixed|dynamic|chembl_count}` SDFs and manifest rows from `generate_casf_smiles_conformer_sets.py`. External checkpoints typically ship one SDF per ligand under a single method name (for example `loqi_raw` or `qwen_4b_bigdata`) representing a pre-PoseBusters pool of up to 1000 conformers.
+RDKit/torsion baselines do not use this step; they emit `{method}_{fixed|dynamic|chembl_count}` SDFs and manifest rows from `src/casf_benchmark/generation/conformer_sets.py`. External checkpoints typically ship one SDF per ligand under a single method name (for example `loqi_raw` or `qwen_4b_bigdata`) representing a pre-PoseBusters pool of up to 1000 conformers.
 
 Data preparation prerequisites are in [casf16_chembl3d_exact_match_method.md](casf16_chembl3d_exact_match_method.md).
 
@@ -92,7 +92,7 @@ Deterministic index draws (seed `--seed`, default 1729) select dynamic and chemb
 
 ### 5. PoseBusters-once validation
 
-`finalize_pipeline_pair` from `generate_casf_smiles_conformer_sets.py` runs PoseBusters **once** on the full fixed pool, then derives pass/fail labels for dynamic and chembl_count tiers by indexing into those results. This mirrors the PB-once strategy documented in [casf16_benchmark_analysis_method.md](casf16_benchmark_analysis_method.md).
+`finalize_pipeline_pair` from `src/casf_benchmark/generation/conformer_sets.py` runs PoseBusters **once** on the full fixed pool, then derives pass/fail labels for dynamic and chembl_count tiers by indexing into those results. This mirrors the PB-once strategy documented in [casf16_benchmark_analysis_method.md](casf16_benchmark_analysis_method.md).
 
 ### 6. Write outputs
 

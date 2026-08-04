@@ -28,6 +28,8 @@ Implementation: `scripts/analyze_casf_conformer_sets.py`.
 
 Default core generation root: `/mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count`.
 
+Pre-generated SDF pools for all dashboard generators (RDKit/torsion, LOQI, Qwen, etc.) are listed in [weka_data_paths.md](weka_data_paths.md). The git clone ships analysis CSVs only under `data/results/runs/`.
+
 **Intersection mapping table.** Ligand eligibility follows the ChEMBL intersection CSV (`ligand_id`, `source_file`, ChEMBL3D identifiers, conformer counts). Chemical filters are not re-applied at analysis time.
 
 Default path: `/mnt/weka/mbedrosian/data/casf16/casf16_core_chembl3d_exact_intersection.csv`.

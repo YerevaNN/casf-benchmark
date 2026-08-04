@@ -2,13 +2,31 @@
 
 ## Purpose
 
-This document describes the procedure implemented in `src/casf_benchmark/generate_casf_smiles_conformer_sets.py`. The script generates multi-conformer ensembles for ligands that appear in the CASF–ChEMBL3D exact-intersection mapping table. For each ligand it produces twelve conformer sets spanning four generation families and three sampling tiers, applies geometric and chemical validity filters, and records generation statistics in tab-separated manifest files.
+This document describes the procedure implemented in `src/casf_benchmark/generation/conformer_sets.py`. The script generates multi-conformer ensembles for ligands that appear in the CASF–ChEMBL3D exact-intersection mapping table. For each ligand it produces twelve conformer sets spanning four generation families and three sampling tiers, applies geometric and chemical validity filters, and records generation statistics in tab-separated manifest files.
 
 The method is designed for benchmark construction rather than production docking. CASF crystal ligand coordinates serve as the PoseBusters reference geometry, while ChEMBL3D topology structures supply the molecular graph and torsion-seed coordinates for structure-based generators. Random-coordinate and torsion-perturbation pipelines are evaluated under matched sample budgets so that downstream geometric analysis can compare methods on a common ligand panel.
 
 For the full generator catalog (learned models, Qwen variants, and reference dataset provenance), see [casf16_generation_pipeline_and_models_method.md](casf16_generation_pipeline_and_models_method.md).
 
-## Input Data
+## Production output locations (Weka)
+
+Completed runs write SDFs and manifests under `{run_root}/generation/` on Weka shared storage. Default roots:
+
+| Cohort | Run root |
+| --- | --- |
+| Core | `/mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count` |
+| Ref | `/mnt/weka/mbedrosian/pharma_generation_analysis/ref_pb_full_dynamic_chembl_count` |
+
+Example: `.../core_pb_full_dynamic_chembl_count/generation/rdkit_random_raw_fixed/{mol_id}.sdf`.
+
+Full table (external generators, reference baselines, inputs): [weka_data_paths.md](weka_data_paths.md).
+
+Run locally:
+
+```bash
+export PYTHONPATH=src
+python -m casf_benchmark.generation.conformer_sets --help
+```
 
 ### Intersection mapping table
 
@@ -266,5 +284,5 @@ Example analysis artifacts for the core 94-ligand intersection are documented in
 
 - `docs/casf16_chembl3d_exact_match_method.md` — construction of the intersection mapping table consumed by this script
 - `src/casf_benchmark/paths.py` — canonical default paths and directory layout constants
-- `src/casf_benchmark/generate_casf_smiles_conformer_sets_report.md` — compact pipeline summary used during development
+- `docs/generate_casf_smiles_conformer_sets_report.md` — compact pipeline summary used during development
 - `docs/casf16_benchmark_analysis_method.md` — geometric analysis, dashboard aggregation, and extended analysis pipeline

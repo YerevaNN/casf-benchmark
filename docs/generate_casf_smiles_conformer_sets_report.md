@@ -1,7 +1,7 @@
 # CASF/ChEMBL3D conformer-set pipeline
 
 This report describes the exact-match input construction and the current
-`generate_casf_smiles_conformer_sets.py` generation workflow.
+`src/casf_benchmark/generation/conformer_sets.py` generation workflow.
 
 ## CASF16 to ChEMBL3D Matching
 
