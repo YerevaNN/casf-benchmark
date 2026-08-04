@@ -1,0 +1,66 @@
+sources:
+  - run_id: rdkit_torsion_core
+    label: "RDKit random & Torsion perturb (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count
+
+  - run_id: rdkit_torsion_ref
+    label: "RDKit random & Torsion perturb (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/pharma_generation_analysis/ref_pb_full_dynamic_chembl_count
+
+  - run_id: qwen_core
+    label: "Qwen (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+
+  - run_id: loqi_core
+    label: "LOQI (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/codex_dir/loqi/generations/casf16_core_loqi_1k
+
+  - run_id: loqi_ref
+    label: "LOQI (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/codex_dir/loqi/generations/casf16_ref_loqi_1k
+
+  - run_id: nextmol_dmt_l_core
+    label: "NextMol DMT-L (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/codex_dir/nextmol_dmt_l/generations/casf16_core_nextmol_dmt_l_1k
+
+  - run_id: nextmol_dmt_l_ref
+    label: "NextMol DMT-L (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/codex_dir/nextmol_dmt_l/generations/casf16_ref_nextmol_dmt_l_1k
+
+  - run_id: torsional_diffusion_core
+    label: "Torsional Diffusion (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/codex_dir/torsional_diffusion/generations/casf16_core_torsional_diffusion_1k
+
+  - run_id: torsional_diffusion_ref
+    label: "Torsional Diffusion (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/codex_dir/torsional_diffusion/generations/casf16_ref_torsional_diffusion_1k
+
+  - run_id: mcf_drugs_l_core
+    label: "MCF drugs-L (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_core_mcf_drugs_l_1k
+
+  - run_id: mcf_drugs_l_ref
+    label: "MCF drugs-L (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_ref_mcf_drugs_l_1k
+
+reference_sources:
+  - run_id: reference_core
+    label: "Reference datasets (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/pharma_generation_analysis/reference_datasets/core
+
+  - run_id: reference_ref
+    label: "Reference datasets (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/pharma_generation_analysis/reference_datasets/ref

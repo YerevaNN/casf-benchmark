@@ -1,0 +1,143 @@
+tiers: [fixed, dynamic, chembl_count]
+
+families:
+  - id: rdkit_random_raw
+    display_label: "RDKit random (raw)"
+    generator: rdkit_torsion
+    method_prefix: rdkit_random_raw
+    core_root: /mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count
+    ref_root: /mnt/weka/mbedrosian/pharma_generation_analysis/ref_pb_full_dynamic_chembl_count
+
+  - id: rdkit_random_minimized
+    display_label: "RDKit random (minimized)"
+    generator: rdkit_torsion
+    method_prefix: rdkit_random_minimized
+    core_root: /mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count
+    ref_root: /mnt/weka/mbedrosian/pharma_generation_analysis/ref_pb_full_dynamic_chembl_count
+
+  - id: torsion_raw
+    display_label: "Torsion perturb (raw)"
+    generator: rdkit_torsion
+    method_prefix: torsion_raw
+    core_root: /mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count
+    ref_root: /mnt/weka/mbedrosian/pharma_generation_analysis/ref_pb_full_dynamic_chembl_count
+
+  - id: torsion_minimized
+    display_label: "Torsion perturb (minimized)"
+    generator: rdkit_torsion
+    method_prefix: torsion_minimized
+    core_root: /mnt/weka/mbedrosian/pharma_generation_analysis/core_pb_full_dynamic_chembl_count
+    ref_root: /mnt/weka/mbedrosian/pharma_generation_analysis/ref_pb_full_dynamic_chembl_count
+
+  - id: loqi_raw
+    display_label: "LOQI"
+    method_prefix: loqi_raw
+    core_root: /mnt/weka/mbedrosian/codex_dir/loqi/generations/casf16_core_loqi_1k
+    ref_root: /mnt/weka/mbedrosian/codex_dir/loqi/generations/casf16_ref_loqi_1k
+
+  - id: nextmol_dmt_l_raw
+    display_label: "NextMol DMT-L"
+    method_prefix: nextmol_dmt_l_raw
+    core_root: /mnt/weka/mbedrosian/codex_dir/nextmol_dmt_l/generations/casf16_core_nextmol_dmt_l_1k
+    ref_root: /mnt/weka/mbedrosian/codex_dir/nextmol_dmt_l/generations/casf16_ref_nextmol_dmt_l_1k
+
+  - id: qwen_0p6b_bigdata
+    display_label: "Qwen 0.6B bigdata"
+    variant: 0p6b_bigdata
+    method_prefix: qwen_0p6b_bigdata
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_0p6b_bigdata_to_revisited
+    display_label: "Qwen 0.6B bigdata->revisited"
+    variant: 0p6b_bigdata_to_revisited
+    method_prefix: qwen_0p6b_bigdata_to_revisited
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_0p6b_fsq
+    display_label: "Qwen 0.6B fsq"
+    variant: 0p6b_fsq
+    method_prefix: qwen_0p6b_fsq
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_0p6b_fsq_bigdata_pretrain
+    display_label: "Qwen 0.6B fsq+bigdata-pretrain"
+    variant: 0p6b_fsq_bigdata_pretrain
+    method_prefix: qwen_0p6b_fsq_bigdata_pretrain
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_1p7b_bigdata
+    display_label: "Qwen 1.7B bigdata"
+    variant: 1p7b_bigdata
+    method_prefix: qwen_1p7b_bigdata
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_1p7b_bigdata_to_revisited
+    display_label: "Qwen 1.7B bigdata->revisited"
+    variant: 1p7b_bigdata_to_revisited
+    method_prefix: qwen_1p7b_bigdata_to_revisited
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_1p7b_fsq
+    display_label: "Qwen 1.7B fsq"
+    variant: 1p7b_fsq
+    method_prefix: qwen_1p7b_fsq
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_1p7b_fsq_bigdata_pretrain
+    display_label: "Qwen 1.7B fsq+bigdata-pretrain"
+    variant: 1p7b_fsq_bigdata_pretrain
+    method_prefix: qwen_1p7b_fsq_bigdata_pretrain
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_1p7b_revisited
+    display_label: "Qwen 1.7B revisited"
+    variant: 1p7b_revisited
+    method_prefix: qwen_1p7b_revisited
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_4b_bigdata
+    display_label: "Qwen 4B bigdata"
+    variant: 4b_bigdata
+    method_prefix: qwen_4b_bigdata
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: qwen_4b_revisited
+    display_label: "Qwen 4B revisited"
+    variant: 4b_revisited
+    method_prefix: qwen_4b_revisited
+    core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
+    ref_root: null
+
+  - id: torsional_diffusion_raw
+    display_label: "Torsional Diffusion"
+    method_prefix: torsional_diffusion_raw
+    core_root: /mnt/weka/mbedrosian/codex_dir/torsional_diffusion/generations/casf16_core_torsional_diffusion_1k
+    ref_root: /mnt/weka/mbedrosian/codex_dir/torsional_diffusion/generations/casf16_ref_torsional_diffusion_1k
+
+  - id: mcf_drugs_l_raw
+    display_label: "MCF drugs-L"
+    method_prefix: mcf_drugs_l_raw
+    core_root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_core_mcf_drugs_l_1k
+    ref_root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_ref_mcf_drugs_l_1k
+
+reference:
+  ligand_sets:
+    core:
+      output_root: /mnt/weka/mbedrosian/pharma_generation_analysis/reference_datasets/core
+      casf_ligand_dir: /mnt/weka/mbedrosian/data/casf16/CASF16/core_chembl3d_exact_intersection_ligands
+      chembl_map_csv: /mnt/weka/mbedrosian/data/casf16/casf16_core_chembl3d_exact_intersection.csv
+    ref:
+      output_root: /mnt/weka/mbedrosian/pharma_generation_analysis/reference_datasets/ref
+      casf_ligand_dir: /mnt/weka/mbedrosian/data/casf16/CASF16_REF/ref_chembl3d_exact_intersection_ligands
+      chembl_map_csv: /mnt/weka/mbedrosian/data/casf16/casf16_ref_chembl3d_exact_intersection.csv
+  sources: [casf_crystal, casf_opt, chembl3d_sdf, chembl3d_gt, chembl3d_gt_pb]

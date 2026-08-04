@@ -1,0 +1,44 @@
+[project]
+name = "casf-benchmark"
+version = "0.1.0"
+description = "CASF–ChEMBL3D conformer generation benchmark and analysis dashboard"
+readme = "README.md"
+requires-python = ">=3.10,<3.12"
+license = {text = "MIT"}
+dependencies = [
+    "numpy>=2.0.0",
+    "pandas>=2.0.0",
+    "pyyaml>=6.0",
+    "posebusters>=0.4.0",
+    "matplotlib>=3.8.0",
+]
+
+[project.optional-dependencies]
+dashboard = [
+    "streamlit>=1.30.0",
+]
+analysis = [
+    "casf-benchmark[dashboard]",
+]
+dev = [
+    "casf-benchmark[analysis]",
+    "pytest>=8.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v"
+pythonpath = ["src", "scripts"]
+
+[tool.setuptools]
+include-package-data = true

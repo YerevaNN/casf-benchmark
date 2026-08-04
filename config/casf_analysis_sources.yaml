@@ -1,0 +1,66 @@
+sources:
+  - run_id: rdkit_torsion_core
+    label: "RDKit random & Torsion perturb (core)"
+    ligand_set: core
+    root: data/results/runs/rdkit_torsion_core
+
+  - run_id: rdkit_torsion_ref
+    label: "RDKit random & Torsion perturb (ref)"
+    ligand_set: ref
+    root: data/results/runs/rdkit_torsion_ref
+
+  - run_id: qwen_core
+    label: "Qwen (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_core
+
+  - run_id: loqi_core
+    label: "LOQI (core)"
+    ligand_set: core
+    root: data/results/runs/loqi_core
+
+  - run_id: loqi_ref
+    label: "LOQI (ref)"
+    ligand_set: ref
+    root: data/results/runs/loqi_ref
+
+  - run_id: nextmol_dmt_l_core
+    label: "NextMol DMT-L (core)"
+    ligand_set: core
+    root: data/results/runs/nextmol_dmt_l_core
+
+  - run_id: nextmol_dmt_l_ref
+    label: "NextMol DMT-L (ref)"
+    ligand_set: ref
+    root: data/results/runs/nextmol_dmt_l_ref
+
+  - run_id: torsional_diffusion_core
+    label: "Torsional Diffusion (core)"
+    ligand_set: core
+    root: data/results/runs/torsional_diffusion_core
+
+  - run_id: torsional_diffusion_ref
+    label: "Torsional Diffusion (ref)"
+    ligand_set: ref
+    root: data/results/runs/torsional_diffusion_ref
+
+  - run_id: mcf_drugs_l_core
+    label: "MCF drugs-L (core)"
+    ligand_set: core
+    root: data/results/runs/mcf_drugs_l_core
+
+  - run_id: mcf_drugs_l_ref
+    label: "MCF drugs-L (ref)"
+    ligand_set: ref
+    root: data/results/runs/mcf_drugs_l_ref
+
+reference_sources:
+  - run_id: reference_core
+    label: "Reference datasets (core)"
+    ligand_set: core
+    root: data/results/runs/reference_core
+
+  - run_id: reference_ref
+    label: "Reference datasets (ref)"
+    ligand_set: ref
+    root: data/results/runs/reference_ref

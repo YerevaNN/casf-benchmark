@@ -1,0 +1,12 @@
+name: casf-benchmark-analysis
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - rdkit
+  - zarr
+  - numpy>=2.0
+  - pandas>=2.0
+  - pip
+  - pip:
+      - -e ".[dev]"

@@ -1,0 +1,54 @@
+On branch main
+Your branch is up to date with 'origin/main'.
+
+Changes not staged for commit:
+  (use "git add <file>..." to update what will be committed)
+  (use "git restore <file>..." to discard changes in working directory)
+	modified:   docs/casf_geometric_report_core_94_ligands.md
+	modified:   pyproject.toml
+	modified:   scripts/analyze_casf_conformer_sets.py
+	modified:   scripts/run_casf_ref_geometric_analysis.sbatch
+	modified:   scripts/submit_casf.sh
+	modified:   src/molgen3D/pharmacophore/chembl3d_conformer_loader.py
+	modified:   src/molgen3D/pharmacophore/conformer_sets_layout.py
+	modified:   src/molgen3D/pharmacophore/generate_casf_smiles_conformer_sets.py
+	modified:   tests/pharmacophore/test_analyze_casf_conformer_sets.py
+	modified:   tests/pharmacophore/test_conformer_sets_layout.py
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	.devcontainer/
+	.p.npy
+	.score.npy
+	apps/
+	docs/casf16_benchmark_analysis_method.md
+	docs/casf16_chembl3d_conformer_generation_method.md
+	docs/casf16_chembl3d_exact_match_method.md
+	docs/casf16_dashboard_method.md
+	docs/casf16_generation_pipeline_and_models_method.md
+	docs/casf16_materialize_generation_sets_method.md
+	docs/casf_dashboard_database_audit.md
+	docs/casf_diverse_conformer_hypothesis_analysis.md
+	docs/casf_extended_analysis_requirements.md
+	docs/casf_pb_once_handoff.md
+	docs/casf_tier_posebusters_effect_report.md
+	outputs
+	scripts/build_casf_analysis_dashboard_db.py
+	scripts/build_casf_analysis_master_csv.py
+	scripts/extended_casf_analysis.py
+	scripts/materialize_casf_generation_sets.py
+	scripts/run_pb_once_casf_analysis.sbatch
+	src/molgen3D/config/casf_analysis_sources.yaml
+	src/molgen3D/config/casf_generation_families.yaml
+	src/molgen3D/pharmacophore/casf_analysis_dataset.py
+	src/molgen3D/pharmacophore/casf_generation_catalog.py
+	src/molgen3D/pharmacophore/casf_generation_normalizer.py
+	src/molgen3D/pharmacophore/casf_stratum_bins.py
+	tests/pharmacophore/test_casf_analysis_dataset.py
+	tests/pharmacophore/test_casf_generation_normalizer.py
+	tests/pharmacophore/test_extended_casf_analysis.py
+	tests/pharmacophore/test_generate_casf_smiles_conformer_sets.py
+	tests/pharmacophore/test_generate_chembl3d_etkdg_conformers.py
+	uv.lock
+
+no changes added to commit (use "git add" and/or "git commit -a")

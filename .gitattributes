@@ -1,0 +1,4 @@
+data/results/casf_per_ligand_long.csv filter=lfs diff=lfs merge=lfs -text
+data/results/casf_analysis_dashboard.sqlite filter=lfs diff=lfs merge=lfs -text
+data/results/extended_casf_analysis.sqlite filter=lfs diff=lfs merge=lfs -text
+data/results/runs/**/geometric_per_ligand_long.csv filter=lfs diff=lfs merge=lfs -text
