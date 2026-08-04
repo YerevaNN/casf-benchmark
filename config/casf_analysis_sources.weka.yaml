@@ -14,6 +14,11 @@ sources:
     ligand_set: core
     root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
 
+  - run_id: qwen_ref
+    label: "Qwen (ref)"
+    ligand_set: ref
+    root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
+
   - run_id: loqi_core
     label: "LOQI (core)"
     ligand_set: core

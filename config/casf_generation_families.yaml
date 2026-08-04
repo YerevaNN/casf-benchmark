@@ -46,77 +46,77 @@ families:
     variant: 0p6b_bigdata
     method_prefix: qwen_0p6b_bigdata
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_0p6b_bigdata_to_revisited
     display_label: "Qwen 0.6B bigdata->revisited"
     variant: 0p6b_bigdata_to_revisited
     method_prefix: qwen_0p6b_bigdata_to_revisited
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_0p6b_fsq
     display_label: "Qwen 0.6B fsq"
     variant: 0p6b_fsq
     method_prefix: qwen_0p6b_fsq
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_0p6b_fsq_bigdata_pretrain
     display_label: "Qwen 0.6B fsq+bigdata-pretrain"
     variant: 0p6b_fsq_bigdata_pretrain
     method_prefix: qwen_0p6b_fsq_bigdata_pretrain
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_1p7b_bigdata
     display_label: "Qwen 1.7B bigdata"
     variant: 1p7b_bigdata
     method_prefix: qwen_1p7b_bigdata
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_1p7b_bigdata_to_revisited
     display_label: "Qwen 1.7B bigdata->revisited"
     variant: 1p7b_bigdata_to_revisited
     method_prefix: qwen_1p7b_bigdata_to_revisited
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_1p7b_fsq
     display_label: "Qwen 1.7B fsq"
     variant: 1p7b_fsq
     method_prefix: qwen_1p7b_fsq
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_1p7b_fsq_bigdata_pretrain
     display_label: "Qwen 1.7B fsq+bigdata-pretrain"
     variant: 1p7b_fsq_bigdata_pretrain
     method_prefix: qwen_1p7b_fsq_bigdata_pretrain
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_1p7b_revisited
     display_label: "Qwen 1.7B revisited"
     variant: 1p7b_revisited
     method_prefix: qwen_1p7b_revisited
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_4b_bigdata
     display_label: "Qwen 4B bigdata"
     variant: 4b_bigdata
     method_prefix: qwen_4b_bigdata
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: qwen_4b_revisited
     display_label: "Qwen 4B revisited"
     variant: 4b_revisited
     method_prefix: qwen_4b_revisited
     core_root: /mnt/weka/mbedrosian/codex_dir/qwen_gens
-    ref_root: null
+    ref_root: /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k
 
   - id: torsional_diffusion_raw
     display_label: "Torsional Diffusion"

@@ -29,6 +29,10 @@ export MOLGEN3D_QUIET_RDKIT_WARNINGS=1
 ANALYZER="${REPO_ROOT}/scripts/analyze_casf_conformer_sets.py"
 MASTER_BUILDER="${REPO_ROOT}/scripts/build_casf_analysis_master_csv.py"
 DASHBOARD_BUILDER="${REPO_ROOT}/scripts/build_casf_analysis_dashboard_db.py"
+ANALYSIS_CONFIG="${REPO_ROOT}/config/casf_analysis_sources.weka.yaml"
+DASHBOARD_DB="/mnt/weka/mbedrosian/pharma_generation_analysis/casf_analysis_dashboard.sqlite"
+MASTER_CSV="/mnt/weka/mbedrosian/pharma_generation_analysis/casf_analysis_master.csv"
+PER_LIGAND_LONG_CSV="/mnt/weka/mbedrosian/pharma_generation_analysis/casf_per_ligand_long.csv"
 
 CORE_MAP="/mnt/weka/mbedrosian/data/casf16/casf16_core_chembl3d_exact_intersection.csv"
 REF_MAP="/mnt/weka/mbedrosian/data/casf16/casf16_ref_chembl3d_exact_intersection.csv"
@@ -113,6 +117,11 @@ run_generation qwen_core core \
   "${CORE_LIGANDS}" \
   "${CORE_MAP}"
 
+run_generation qwen_ref ref \
+  /mnt/weka/mbedrosian/codex_dir/qwen/generations/casf16_ref_qwen_1k \
+  "${REF_LIGANDS}" \
+  "${REF_MAP}"
+
 run_generation loqi_core core \
   /mnt/weka/mbedrosian/codex_dir/loqi/generations/casf16_core_loqi_1k \
   "${CORE_LIGANDS}" \
@@ -153,7 +162,12 @@ run_generation mcf_drugs_l_ref ref \
   "${REF_LIGANDS}" \
   "${REF_MAP}"
 
-run_step master-csv "${PYTHON}" -u "${MASTER_BUILDER}"
-run_step dashboard-db "${PYTHON}" -u "${DASHBOARD_BUILDER}"
+run_step master-csv "${PYTHON}" -u "${MASTER_BUILDER}" \
+  --config "${ANALYSIS_CONFIG}" \
+  --output-csv "${MASTER_CSV}" \
+  --per-ligand-long-csv "${PER_LIGAND_LONG_CSV}"
+run_step dashboard-db "${PYTHON}" -u "${DASHBOARD_BUILDER}" \
+  --config "${ANALYSIS_CONFIG}" \
+  --output-db "${DASHBOARD_DB}"
 
 echo "finished=$(date -Is)"

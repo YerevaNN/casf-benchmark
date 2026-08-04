@@ -46,6 +46,8 @@ from casf_benchmark.paths import (
     DEFAULT_CHEMBL_DATASET_ROOT,
     DEFAULT_CHEMBL_MAP_CSV,
     DEFAULT_CORE_INTERSECTION_ROOT,
+    DEFAULT_CORE_LIGAND_DIR,
+    DEFAULT_REF_INTERSECTION_LIGAND_DIR,
     METHODS,
     GeometricAnalysisPaths,
     resolve_geometric_paths,
@@ -2268,7 +2270,7 @@ def run(
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output-dir", "--output_dir", dest="output_dir", type=Path, default=DEFAULT_CORE_INTERSECTION_ROOT)
+    parser.add_argument("--output-dir", "--output_dir", "--run-root", "--run_root", dest="output_dir", type=Path, default=DEFAULT_CORE_INTERSECTION_ROOT)
     parser.add_argument("--casf-ligand-dir", type=Path, default=None)
     parser.add_argument("--casf-opt-ligand-dir", type=Path, default=DEFAULT_CASF_OPT_LIGAND_DIR)
     parser.add_argument("--chembl-map-csv", type=Path, default=DEFAULT_CHEMBL_MAP_CSV)
@@ -2324,11 +2326,23 @@ def main() -> None:
         raise SystemExit("--reference-only requires --ligand-set core|ref")
     casf_ligand_dir = args.casf_ligand_dir
     if casf_ligand_dir is None:
-        casf_ligand_dir = DEFAULT_CASF16_DATA / "core_chembl3d_exact_intersection_ligands"
+        if args.ligand_set == "ref":
+            casf_ligand_dir = DEFAULT_REF_INTERSECTION_LIGAND_DIR
+        else:
+            casf_ligand_dir = DEFAULT_CORE_LIGAND_DIR
         if not has_mol2_files(casf_ligand_dir):
-            casf_ligand_dir = args.output_dir.parent / "core_chembl3d_exact_intersection_ligands"
+            fallback = (
+                "ref_chembl3d_exact_intersection_ligands"
+                if args.ligand_set == "ref"
+                else "core_chembl3d_exact_intersection_ligands"
+            )
+            casf_ligand_dir = args.output_dir.parent / fallback
         if not has_mol2_files(casf_ligand_dir):
-            casf_ligand_dir = DEFAULT_CASF_LIGAND_DIR
+            casf_ligand_dir = (
+                DEFAULT_REF_INTERSECTION_LIGAND_DIR
+                if args.ligand_set == "ref"
+                else DEFAULT_CASF_LIGAND_DIR
+            )
     paths = resolve_geometric_paths(args.output_dir.resolve(), casf_ligand_dir.resolve())
     run(
         paths=paths,
