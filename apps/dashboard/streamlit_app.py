@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+from numbers import Integral, Real
 from pathlib import Path
 
 import pandas as pd
@@ -327,8 +328,38 @@ def sort_rows(frame: pd.DataFrame) -> pd.DataFrame:
     return out.drop(columns=["_row_type_order", "_tier_order"]).reset_index(drop=True)
 
 
+def _format_display_value(value: object) -> str:
+    """Format a cell for display: floats use at most three decimal places."""
+    if value is None:
+        return ""
+    try:
+        if pd.isna(value):
+            return ""
+    except (TypeError, ValueError):
+        pass
+    if isinstance(value, bool):
+        return str(value)
+    if isinstance(value, Integral):
+        return str(int(value))
+    if isinstance(value, Real):
+        number = float(value)
+        if number == int(number) and abs(number) < 1e15:
+            return str(int(number))
+        text = f"{number:.3f}".rstrip("0").rstrip(".")
+        return text or "0"
+    return str(value)
+
+
+def _format_frame_for_display(frame: pd.DataFrame) -> pd.DataFrame:
+    out = frame.copy()
+    for column in out.columns:
+        if pd.api.types.is_numeric_dtype(out[column]):
+            out[column] = out[column].map(_format_display_value)
+    return out
+
+
 def _escape_html(value: object) -> str:
-    text = "" if value is None or (isinstance(value, float) and pd.isna(value)) else str(value)
+    text = _format_display_value(value)
     return (
         text.replace("&", "&amp;")
         .replace("<", "&lt;")
@@ -434,13 +465,14 @@ def display_table(frame: pd.DataFrame, columns: list[str], name: str) -> None:
     cols = [column for column in columns if column in frame.columns]
     if not cols:
         data = frame
-        st.dataframe(data, use_container_width=True, height=TABLE_HEIGHT_PX)
+        st.dataframe(_format_frame_for_display(data), use_container_width=True, height=TABLE_HEIGHT_PX)
     else:
         data, visible_cols = _apply_table_view_controls(frame[cols], cols, name)
+        display_data = _format_frame_for_display(data)
         if "method" in visible_cols:
-            _render_sticky_table(data, visible_cols)
+            _render_sticky_table(display_data, visible_cols)
         else:
-            st.dataframe(data, use_container_width=True, height=TABLE_HEIGHT_PX)
+            st.dataframe(display_data, use_container_width=True, height=TABLE_HEIGHT_PX)
     st.download_button(
         f"Download {name} CSV",
         data=data.to_csv(index=False).encode("utf-8"),
