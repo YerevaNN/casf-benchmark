@@ -9,7 +9,9 @@ from typing import Any
 
 import yaml
 
-DEFAULT_CATALOG_PATH = Path(__file__).resolve().parents[2] / "config" / "casf_generation_families.yaml"
+from casf_benchmark.paths import DEFAULT_GENERATION_FAMILIES_CONFIG
+
+DEFAULT_CATALOG_PATH = DEFAULT_GENERATION_FAMILIES_CONFIG
 TIERS = ("fixed", "dynamic", "chembl_count")
 REFERENCE_TIER = "reference"
 

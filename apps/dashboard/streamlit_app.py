@@ -430,7 +430,8 @@ def filter_extended_table(
 def default_extended_db_path(db_path: Path, table_names: set[str]) -> Path:
     if any(name.startswith("extended_") for name in table_names):
         return db_path
-    return Path(os.environ.get("CASF_EXTENDED_ANALYSIS_DB", str(DEFAULT_EXTENDED_DB)))
+    override = os.environ.get("CASF_EXTENDED_DB") or os.environ.get("CASF_EXTENDED_ANALYSIS_DB")
+    return Path(override if override else str(DEFAULT_EXTENDED_DB))
 
 
 def render_extended_analysis(db_path: Path, table_names: set[str]) -> None:

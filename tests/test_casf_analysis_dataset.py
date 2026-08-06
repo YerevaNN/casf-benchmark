@@ -10,7 +10,7 @@ from casf_benchmark.analysis.dataset import (
     build_global_per_ligand_long,
     build_master_frame,
 )
-from build_casf_analysis_dashboard_db import build_dashboard_db
+from casf_benchmark.cli.build_dashboard_db import build_dashboard_db
 from casf_benchmark.stratum_bins import assign_stratum
 
 

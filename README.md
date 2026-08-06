@@ -18,8 +18,11 @@ Uses [`data/results/casf_analysis_dashboard.sqlite`](data/results/casf_analysis_
 
 ```bash
 conda env create -f environment-analysis.yml && conda activate casf-benchmark-analysis
-export PYTHONPATH=src CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian
+export CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian
+casf-analyze-conformer-sets --help
 ```
+
+Installs the package editable via `pip install -e ".[dev]"` (see `environment-analysis.yml`). Console scripts such as `casf-analyze-conformer-sets`, `casf-build-dashboard-db`, and `casf-generate-conformer-sets` are available after install. Legacy `python scripts/...` wrappers remain for Slurm compatibility.
 
 ## Documentation
 
@@ -33,13 +36,17 @@ export PYTHONPATH=src CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian
 | [docs/extras.md](docs/extras.md) | Install, Weka paths, deployment |
 | [docs/casf16_hypothesis.md](docs/casf16_hypothesis.md) | Hypothesis (H0/H1, metrics, predictions) |
 | [docs/casf16-core-hypothesis-assessment.md](docs/casf16-core-hypothesis-assessment.md) | Core 94-ligand results vs hypothesis |
+| [docs/bioactive_conformer_benchmark_analysis.md](docs/bioactive_conformer_benchmark_analysis.md) | Paper-style analysis notes and figure plan |
+| [docs/casf_geometric_report_core_94_ligands.md](docs/casf_geometric_report_core_94_ligands.md) | Snapshot geometric report (core set) |
+| [docs/casf_geometric_report_ref_1219_ligands.md](docs/casf_geometric_report_ref_1219_ligands.md) | Snapshot geometric report (ref set) |
+| [docs/generation_pipeline_design.md](docs/generation_pipeline_design.md) | Original SMILES conformer generation design notes |
 
 ## Common commands
 
 ```bash
 ./scripts/submit_casf.sh generate core          # RDKit/torsion Slurm generation
 ./scripts/submit_casf.sh analyze core           # geometric analysis
-python scripts/build_casf_analysis_dashboard_db.py
+casf-build-dashboard-db
 ./scripts/push_with_mirror.sh                   # sync personal mirror for Streamlit Cloud
 ```
 

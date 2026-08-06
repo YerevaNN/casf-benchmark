@@ -1,18 +1,8 @@
 from __future__ import annotations
 
-import importlib.util
-import sys
-from pathlib import Path
-
 import pandas as pd
 
-
-SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "extended_casf_analysis.py"
-SPEC = importlib.util.spec_from_file_location("extended_casf_analysis", SCRIPT_PATH)
-extended = importlib.util.module_from_spec(SPEC)
-assert SPEC.loader is not None
-sys.modules[SPEC.name] = extended
-SPEC.loader.exec_module(extended)
+from casf_benchmark.cli import extended_analysis as extended
 
 
 def test_common_ligand_pairing_excludes_non_overlapping_ligands() -> None:

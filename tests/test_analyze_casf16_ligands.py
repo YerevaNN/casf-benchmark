@@ -1,20 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
-import sys
 from pathlib import Path
 
 import pytest
 
+from casf_benchmark.cli import analyze_casf16_ligands as analyzer
+
 Chem = pytest.importorskip("rdkit.Chem")
-
-
-SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "analyze_casf16_ligands.py"
-SPEC = importlib.util.spec_from_file_location("analyze_casf16_ligands", SCRIPT_PATH)
-analyzer = importlib.util.module_from_spec(SPEC)
-assert SPEC.loader is not None
-sys.modules[SPEC.name] = analyzer
-SPEC.loader.exec_module(analyzer)
 
 
 def mol_from_smiles(smiles: str):

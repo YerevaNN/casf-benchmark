@@ -1,19 +1,12 @@
 from __future__ import annotations
 
-import importlib.util
 import math
-import sys
 from pathlib import Path
 
 import pandas as pd
 import pytest
 
-SCRIPT_PATH = Path(__file__).resolve().parents[1] / "scripts" / "analyze_casf_conformer_sets.py"
-SPEC = importlib.util.spec_from_file_location("analyze_casf_conformer_sets", SCRIPT_PATH)
-analyzer = importlib.util.module_from_spec(SPEC)
-assert SPEC.loader is not None
-sys.modules[SPEC.name] = analyzer
-SPEC.loader.exec_module(analyzer)
+from casf_benchmark.cli import analyze_conformer_sets as analyzer
 
 
 def test_parse_method_metadata_handles_chembl_count():

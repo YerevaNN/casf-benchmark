@@ -67,7 +67,7 @@ if [[ "${COHORT}" == "core" ]]; then
   DEFAULT_OUTPUT_DIR="${WEKA_PHARMA}/core_pb_full_dynamic_chembl_count"
 else
   DEFAULT_CSV="${WEKA_DATA}/casf16_ref_chembl3d_exact_intersection.csv"
-  DEFAULT_LIG_DIR="${WEKA_DATA}/CASF16_REF/ligands"
+  DEFAULT_LIG_DIR="${WEKA_DATA}/CASF16_REF/ref_chembl3d_exact_intersection_ligands"
   DEFAULT_OUTPUT_DIR="${WEKA_PHARMA}/ref_pb_full_dynamic_chembl_count"
 fi
 

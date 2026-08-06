@@ -47,6 +47,11 @@ DEFAULT_MASTER_CSV = RESULTS_ROOT / "casf_analysis_master.csv"
 DEFAULT_PER_LIGAND_LONG_CSV = RESULTS_ROOT / "casf_per_ligand_long.csv"
 DEFAULT_RUNS_ROOT = RESULTS_ROOT / "runs"
 
+CONFIG_ROOT = PACKAGE_ROOT / "config"
+DEFAULT_ANALYSIS_SOURCES_CONFIG = CONFIG_ROOT / "casf_analysis_sources.yaml"
+DEFAULT_ANALYSIS_SOURCES_WEKA_CONFIG = CONFIG_ROOT / "casf_analysis_sources.weka.yaml"
+DEFAULT_GENERATION_FAMILIES_CONFIG = CONFIG_ROOT / "casf_generation_families.yaml"
+
 DEFAULT_CASF16_DATA = WEKA_DATA_ROOT / "casf16" / "CASF16"
 DEFAULT_CASF16_REF_DATA = WEKA_DATA_ROOT / "casf16" / "CASF16_REF"
 DEFAULT_CASF_LIGAND_DIR = DEFAULT_CASF16_DATA / "ligands"
@@ -55,8 +60,22 @@ DEFAULT_CASF_REF_LIGAND_DIR = DEFAULT_CASF16_REF_DATA / "ligands"
 DEFAULT_CORE_LIGAND_DIR = DEFAULT_CASF16_DATA / "core_chembl3d_exact_intersection_ligands"
 DEFAULT_REF_INTERSECTION_LIGAND_DIR = DEFAULT_CASF16_REF_DATA / "ref_chembl3d_exact_intersection_ligands"
 
-DEFAULT_CHEMBL_MAP_CSV = MAPPING_ROOT / "casf16_core_chembl3d_exact_intersection.csv"
-DEFAULT_CHEMBL_REF_MAP_CSV = MAPPING_ROOT / "casf16_ref_chembl3d_exact_intersection.csv"
+BUNDLED_CHEMBL_MAP_CSV = MAPPING_ROOT / "casf16_core_chembl3d_exact_intersection.csv"
+BUNDLED_CHEMBL_REF_MAP_CSV = MAPPING_ROOT / "casf16_ref_chembl3d_exact_intersection.csv"
+WEKA_CHEMBL_MAP_CSV = WEKA_DATA_ROOT / "casf16" / "casf16_core_chembl3d_exact_intersection.csv"
+WEKA_CHEMBL_REF_MAP_CSV = WEKA_DATA_ROOT / "casf16" / "casf16_ref_chembl3d_exact_intersection.csv"
+
+
+def _first_existing_path(*candidates: Path) -> Path:
+    """Return the first candidate that exists, else the first candidate."""
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+DEFAULT_CHEMBL_MAP_CSV = _first_existing_path(WEKA_CHEMBL_MAP_CSV, BUNDLED_CHEMBL_MAP_CSV)
+DEFAULT_CHEMBL_REF_MAP_CSV = _first_existing_path(WEKA_CHEMBL_REF_MAP_CSV, BUNDLED_CHEMBL_REF_MAP_CSV)
 DEFAULT_CHEMBL_DATASET_ROOT = WEKA_DATA_ROOT / "chembl3d"
 DEFAULT_CHEMBL3D_INDEX_DIR = WEKA_DATA_ROOT / "chembl3d_index"
 DEFAULT_CHEMBL3D_INDEX_CSV = DEFAULT_CHEMBL3D_INDEX_DIR / "chembl3d_topology_smiles_index.csv"
