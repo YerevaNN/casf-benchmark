@@ -10,12 +10,19 @@ from typing import Sequence
 
 import numpy as np
 from rdkit import Chem
-from rdkit.Chem import AllChem, rdMolAlign, rdMolTransforms
+from rdkit.Chem import AllChem, Descriptors, rdMolAlign, rdMolTransforms
 
 PAIRWISE_SAMPLE_CAP = 120
 RANDOM_SEED = 42
+BOND_LENGTH_FAIL_FRAC = 0.15
+ANGLE_FAIL_DEG = 15.0
 
+PRIMARY_CLUSTER_THRESHOLDS = (0.5, 0.75, 1.0, 1.25)
+SUPPLEMENTARY_CLUSTER_THRESHOLDS = (2.0, 3.0)
+ALL_CLUSTER_THRESHOLDS = PRIMARY_CLUSTER_THRESHOLDS + SUPPLEMENTARY_CLUSTER_THRESHOLDS
 CASF_GEOMETRIC_CLUSTER_THRESHOLDS = (0.5, 1.0, 2.0, 3.0)
+BIOACTIVE_HIT_THRESHOLDS = (0.5, 1.0, 1.5, 2.0)
+COVERAGE_THRESHOLDS = (1.0, 2.0)
 
 
 def threshold_tag(threshold: float) -> str:
@@ -253,3 +260,339 @@ def safe_median(values: Sequence[float]) -> float:
 def safe_sum(values: Sequence[float]) -> float:
     finite = [float(v) for v in values if isinstance(v, (int, float)) and math.isfinite(v)]
     return float(sum(finite)) if finite else math.nan
+
+
+def rmsd_profile(
+    gen_mols: Sequence[Chem.Mol],
+    ref_mol: Chem.Mol,
+    thresholds: Sequence[float] = BIOACTIVE_HIT_THRESHOLDS,
+) -> dict[str, float]:
+    values = [best_aligned_rmsd(mol, ref_mol) for mol in gen_mols]
+    finite = [v for v in values if math.isfinite(v)]
+    if not finite:
+        return {
+            "best_rmsd": math.nan,
+            "median_rmsd": math.nan,
+            "p90_rmsd": math.nan,
+            **{f"frac_lt_{str(t).replace('.', 'p')}": math.nan for t in thresholds},
+        }
+    arr = np.asarray(finite, dtype=float)
+    out = {
+        "best_rmsd": float(np.min(arr)),
+        "median_rmsd": float(np.median(arr)),
+        "p90_rmsd": float(np.percentile(arr, 90)),
+    }
+    for threshold in thresholds:
+        tag = str(threshold).replace(".", "p")
+        out[f"frac_lt_{tag}"] = float(np.mean(arr <= threshold))
+    return out
+
+
+def bioactive_hit_at_k(
+    gen_mols: Sequence[Chem.Mol],
+    ref_mol: Chem.Mol,
+    thresholds: Sequence[float] = BIOACTIVE_HIT_THRESHOLDS,
+) -> dict[str, float]:
+    profile = rmsd_profile(gen_mols, ref_mol, thresholds=thresholds)
+    best = profile["best_rmsd"]
+    hits = {}
+    for threshold in thresholds:
+        tag = str(threshold).replace(".", "p")
+        hits[f"hit_{tag}"] = float(best <= threshold) if math.isfinite(best) else math.nan
+    hits["best_rmsd"] = best
+    hits["median_rmsd"] = profile["median_rmsd"]
+    return hits
+
+
+def greedy_cluster_count(mols: Sequence[Chem.Mol], threshold: float) -> int:
+    centers: list[Chem.Mol] = []
+    for mol in mols:
+        if not centers:
+            centers.append(mol)
+            continue
+        distances = [heavy_rmsd_same_topology(mol, center) for center in centers]
+        finite = [value for value in distances if math.isfinite(value)]
+        if not finite or min(finite) >= threshold:
+            centers.append(mol)
+    return len(centers)
+
+
+def clusters_per_100(mols: Sequence[Chem.Mol], threshold: float) -> float:
+    if not mols:
+        return math.nan
+    return 100.0 * greedy_cluster_count(mols, threshold) / len(mols)
+
+
+def cluster_entropy(mols: Sequence[Chem.Mol], threshold: float = 1.0) -> float:
+    if len(mols) <= 1:
+        return 0.0
+    assignments = greedy_cluster_assignments(mols, threshold)
+    counts = np.bincount(np.asarray(assignments, dtype=int))
+    probs = counts / counts.sum()
+    probs = probs[probs > 0]
+    if len(probs) <= 1:
+        return 0.0
+    entropy = -float(np.sum(probs * np.log(probs)))
+    max_entropy = math.log(len(probs))
+    return entropy / max_entropy if max_entropy > 0 else 0.0
+
+
+def duplicate_fraction(mols: Sequence[Chem.Mol], threshold: float, cap: int = PAIRWISE_SAMPLE_CAP) -> float:
+    sampled = sample_mols(mols, cap=cap)
+    if len(sampled) < 2:
+        return math.nan
+    duplicates = 0
+    total = 0
+    for mol_a, mol_b in itertools.combinations(sampled, 2):
+        value = heavy_rmsd_same_topology(mol_a, mol_b)
+        if not math.isfinite(value):
+            continue
+        total += 1
+        if value < threshold:
+            duplicates += 1
+    return duplicates / total if total else math.nan
+
+
+def chembl_coverage_fraction(
+    gen_mols: Sequence[Chem.Mol],
+    chembl_mols: Sequence[Chem.Mol],
+    threshold: float,
+) -> float:
+    if not chembl_mols:
+        return math.nan
+    covered = 0
+    for ref in chembl_mols:
+        best = min((best_aligned_rmsd(gen, ref) for gen in gen_mols), default=math.nan)
+        if math.isfinite(best) and best <= threshold:
+            covered += 1
+    return covered / len(chembl_mols)
+
+
+def chembl_reference_rmsd_stats(
+    gen_mols: Sequence[Chem.Mol],
+    chembl_mols: Sequence[Chem.Mol],
+) -> dict[str, float]:
+    if not gen_mols or not chembl_mols:
+        return {
+            "best_rmsd": math.nan,
+            "median_best_rmsd": math.nan,
+            "mean_median_rmsd": math.nan,
+        }
+    per_gen_best = []
+    for gen in gen_mols:
+        rmsds = [best_aligned_rmsd(gen, ref) for ref in chembl_mols]
+        finite = [v for v in rmsds if math.isfinite(v)]
+        per_gen_best.append(min(finite) if finite else math.nan)
+    per_gen_median = []
+    for gen in gen_mols:
+        rmsds = [best_aligned_rmsd(gen, ref) for ref in chembl_mols]
+        finite = [v for v in rmsds if math.isfinite(v)]
+        per_gen_median.append(float(np.median(finite)) if finite else math.nan)
+    finite_best = [v for v in per_gen_best if math.isfinite(v)]
+    finite_median = [v for v in per_gen_median if math.isfinite(v)]
+    return {
+        "best_rmsd": min(finite_best) if finite_best else math.nan,
+        "median_best_rmsd": float(np.median(finite_best)) if finite_best else math.nan,
+        "mean_median_rmsd": float(np.mean(finite_median)) if finite_median else math.nan,
+    }
+
+
+def check_validity(mol: Chem.Mol) -> tuple[bool, str]:
+    if mol is None:
+        return False, "none_mol"
+    if mol.GetNumConformers() == 0:
+        return False, "no_conformer"
+    try:
+        Chem.SanitizeMol(mol)
+    except Exception as exc:
+        return False, f"sanitize:{type(exc).__name__}"
+    conf = mol.GetConformer(0)
+    for atom in mol.GetAtoms():
+        pos = conf.GetAtomPosition(atom.GetIdx())
+        if not all(map(math.isfinite, (pos.x, pos.y, pos.z))):
+            return False, "non_finite_coords"
+    return True, "ok"
+
+
+def check_smiles_match(gen_mol: Chem.Mol, ref_smiles: str, isomeric: bool = True) -> bool:
+    if not ref_smiles:
+        return False
+    try:
+        gen_smiles = Chem.MolToSmiles(mol_no_h(gen_mol), isomericSmiles=isomeric)
+        ref_mol = Chem.MolFromSmiles(ref_smiles)
+        if ref_mol is None:
+            return gen_smiles == ref_smiles
+        ref_canonical = Chem.MolToSmiles(ref_mol, isomericSmiles=isomeric)
+        return gen_smiles == ref_canonical
+    except Exception:
+        return False
+
+
+def posebusters_pass(mol: Chem.Mol) -> tuple[bool, str]:
+    try:
+        from posebusters import PoseBusters
+    except ImportError:
+        return False, "posebusters_unavailable"
+    try:
+        bust = PoseBusters()
+        frame = bust.bust([mol], None, None, full_report=False)
+        passed = bool(frame.all(axis=1).iloc[0])
+        return passed, "ok" if passed else "posebusters_fail"
+    except Exception as exc:
+        return False, f"posebusters_error:{type(exc).__name__}"
+
+
+def _minimize_copy(mol: Chem.Mol) -> Chem.Mol | None:
+    copy = Chem.Mol(mol)
+    try:
+        if not AllChem.MMFFHasAllMoleculeParams(copy):
+            return None
+        props = AllChem.MMFFGetMoleculeProperties(copy, mmffVariant="MMFF94s")
+        ff = AllChem.MMFFGetMoleculeForceField(copy, props, confId=0)
+        if ff is None:
+            return None
+        ff.Minimize(maxIts=200)
+        return copy
+    except Exception:
+        return None
+
+
+def bond_angle_stats(mol: Chem.Mol) -> dict[str, float]:
+    minimized = _minimize_copy(mol)
+    if minimized is None:
+        return {
+            "bond_mae": math.nan,
+            "angle_mae": math.nan,
+            "bond_fail": math.nan,
+            "angle_fail": math.nan,
+        }
+    conf_obs = mol.GetConformer(0)
+    conf_ref = minimized.GetConformer(0)
+    bond_errors = []
+    bond_fails = 0
+    for bond in mol.GetBonds():
+        i = bond.GetBeginAtomIdx()
+        j = bond.GetEndAtomIdx()
+        obs = conf_obs.GetAtomPosition(i).Distance(conf_obs.GetAtomPosition(j))
+        ref = conf_ref.GetAtomPosition(i).Distance(conf_ref.GetAtomPosition(j))
+        if ref <= 1e-6:
+            continue
+        rel_err = abs(obs - ref) / ref
+        bond_errors.append(rel_err)
+        if rel_err > BOND_LENGTH_FAIL_FRAC:
+            bond_fails += 1
+    angle_errors = []
+    angle_fails = 0
+    for atom in mol.GetAtoms():
+        if atom.GetDegree() < 2:
+            continue
+        neighbors = list(atom.GetNeighbors())
+        for idx_a in range(len(neighbors)):
+            for idx_b in range(idx_a + 1, len(neighbors)):
+                a = neighbors[idx_a].GetIdx()
+                b = atom.GetIdx()
+                c = neighbors[idx_b].GetIdx()
+                obs = rdMolTransforms.GetAngleDeg(conf_obs, a, b, c)
+                ref = rdMolTransforms.GetAngleDeg(conf_ref, a, b, c)
+                err = abs(obs - ref)
+                angle_errors.append(err)
+                if err > ANGLE_FAIL_DEG:
+                    angle_fails += 1
+    n_bonds = len(bond_errors)
+    n_angles = len(angle_errors)
+    return {
+        "bond_mae": float(np.mean(bond_errors)) if bond_errors else math.nan,
+        "angle_mae": float(np.mean(angle_errors)) if angle_errors else math.nan,
+        "bond_fail": bond_fails / n_bonds if n_bonds else math.nan,
+        "angle_fail": angle_fails / n_angles if n_angles else math.nan,
+    }
+
+
+def diversity_metrics(mols: Sequence[Chem.Mol]) -> dict[str, float]:
+    if not mols:
+        out: dict[str, float] = {
+            "conformer_count": 0.0,
+            "mean_torsion_std_deg": math.nan,
+            "cluster_entropy_1p0": math.nan,
+            "duplicate_fraction_1p0": math.nan,
+            "pairwise_mean": math.nan,
+            "pairwise_p90": math.nan,
+        }
+        for threshold in ALL_CLUSTER_THRESHOLDS:
+            tag = str(threshold).replace(".", "p")
+            out[f"greedy_clusters_{tag}"] = math.nan
+            out[f"clusters_per_100_{tag}"] = math.nan
+        return out
+    pairwise = pairwise_rmsd_stats(mols)
+    out = {
+        "conformer_count": float(len(mols)),
+        "mean_torsion_std_deg": mean_torsion_std_deg(mols),
+        "cluster_entropy_1p0": cluster_entropy(mols, threshold=1.0),
+        "duplicate_fraction_1p0": duplicate_fraction(mols, threshold=1.0),
+        **pairwise,
+    }
+    for threshold in ALL_CLUSTER_THRESHOLDS:
+        tag = str(threshold).replace(".", "p")
+        count = greedy_cluster_count(mols, threshold)
+        out[f"greedy_clusters_{tag}"] = float(count)
+        out[f"clusters_per_100_{tag}"] = clusters_per_100(mols, threshold)
+    return out
+
+
+def spearman_correlation(x: Sequence[float], y: Sequence[float]) -> float:
+    pairs = [(a, b) for a, b in zip(x, y) if math.isfinite(a) and math.isfinite(b)]
+    if len(pairs) < 3:
+        return math.nan
+    xs = np.asarray([p[0] for p in pairs], dtype=float)
+    ys = np.asarray([p[1] for p in pairs], dtype=float)
+    x_rank = pd_rank(xs)
+    y_rank = pd_rank(ys)
+    if np.std(x_rank) == 0 or np.std(y_rank) == 0:
+        return math.nan
+    return float(np.corrcoef(x_rank, y_rank)[0, 1])
+
+
+def pd_rank(values: np.ndarray) -> np.ndarray:
+    order = values.argsort()
+    ranks = np.empty_like(order, dtype=float)
+    ranks[order] = np.arange(1, len(values) + 1, dtype=float)
+    return ranks
+
+
+def rank_series(values: Sequence[float], ascending: bool = True) -> list[float]:
+    indexed = [(idx, value) for idx, value in enumerate(values)]
+    finite = [(idx, value) for idx, value in indexed if math.isfinite(value)]
+    finite.sort(key=lambda item: item[1], reverse=not ascending)
+    ranks = [math.nan] * len(values)
+    for rank, (idx, _value) in enumerate(finite, start=1):
+        ranks[idx] = float(rank)
+    return ranks
+
+
+def rank_methods(
+    metric_df: list[dict],
+    method_key: str,
+    rank_columns: dict[str, bool],
+) -> tuple[list[dict], dict[str, float]]:
+    rows = [dict(row) for row in metric_df]
+    for column, ascending in rank_columns.items():
+        values = [row.get(column, math.nan) for row in rows]
+        ranks = rank_series(values, ascending=ascending)
+        for row, rank in zip(rows, ranks):
+            row[f"{column}_rank"] = rank
+    correlations: dict[str, float] = {}
+    columns = list(rank_columns)
+    for idx_a in range(len(columns)):
+        for idx_b in range(idx_a + 1, len(columns)):
+            col_a, col_b = columns[idx_a], columns[idx_b]
+            values_a = [row.get(f"{col_a}_rank", math.nan) for row in rows]
+            values_b = [row.get(f"{col_b}_rank", math.nan) for row in rows]
+            correlations[f"{col_a}_vs_{col_b}"] = spearman_correlation(values_a, values_b)
+    return rows, correlations
+
+
+def num_rotatable_bonds(smiles: str) -> int:
+    mol = Chem.MolFromSmiles(smiles)
+    if mol is None:
+        return 0
+    return int(Descriptors.NumRotatableBonds(mol))
