@@ -4,6 +4,8 @@ Build the CASF–ChEMBL3D exact-intersection ligand panel before generation or a
 
 **Code:** [`scripts/match_casf16_chembl3d_exact.py`](../scripts/match_casf16_chembl3d_exact.py) · [`src/casf_benchmark/paths.py`](../src/casf_benchmark/paths.py) · [`src/casf_benchmark/chembl3d/loader.py`](../src/casf_benchmark/chembl3d/loader.py)
 
+**Detailed ChEMBL3D loader API:** [casf16_chembl3d_data_loader_method.md](casf16_chembl3d_data_loader_method.md)
+
 ## Pipeline
 
 ```

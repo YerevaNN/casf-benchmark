@@ -176,6 +176,8 @@ Inference runs **outside** this repo. Register in [`src/casf_benchmark/config/ca
 
 After inference → [materialization.md](materialization.md) → [analyzer.md](analyzer.md).
 
+**Per-model papers, training data, and benchmark numbers:** [generator_models_catalog.md](generator_models_catalog.md).
+
 ## Design rationale
 
 - ChEMBL3D topology (conformers stripped) as `base_mol` aligns RDKit embedding with the ChEMBL3D graph.
