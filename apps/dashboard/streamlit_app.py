@@ -5,7 +5,6 @@ from __future__ import annotations
 
 import os
 import sqlite3
-from numbers import Integral, Real
 from pathlib import Path
 
 import pandas as pd
@@ -237,53 +236,7 @@ EXTENDED_TABLES = {
     },
 }
 
-DEFAULT_COL_MIN_WIDTH_PX = 112
-METHOD_COL_MIN_WIDTH_PX = 220
 TABLE_HEIGHT_PX = 520
-
-STICKY_TABLE_CSS = """
-<style>
-.casf-table-wrap {
-  overflow: auto;
-  max-height: 520px;
-  margin-bottom: 0.5rem;
-  border: 1px solid #e6e9ef;
-  border-radius: 0.5rem;
-}
-.casf-table {
-  border-collapse: separate;
-  border-spacing: 0;
-  font-size: 0.875rem;
-  width: max-content;
-  min-width: 100%;
-}
-.casf-table th,
-.casf-table td {
-  padding: 0.45rem 0.65rem;
-  border-bottom: 1px solid #e6e9ef;
-  border-right: 1px solid #e6e9ef;
-  white-space: nowrap;
-  background: #ffffff;
-}
-.casf-table th {
-  background: #f0f2f6;
-  font-weight: 600;
-  position: sticky;
-  top: 0;
-  z-index: 2;
-}
-.casf-table td.sticky-method,
-.casf-table th.sticky-method {
-  position: sticky;
-  left: 0;
-  z-index: 1;
-  box-shadow: 4px 0 6px -2px rgba(49, 51, 63, 0.18);
-}
-.casf-table th.sticky-method {
-  z-index: 4;
-}
-</style>
-"""
 
 
 @st.cache_data(show_spinner=False)
@@ -328,51 +281,42 @@ def sort_rows(frame: pd.DataFrame) -> pd.DataFrame:
     return out.drop(columns=["_row_type_order", "_tier_order"]).reset_index(drop=True)
 
 
-def _format_display_value(value: object) -> str:
-    """Format a cell for display: floats use at most three decimal places."""
-    if value is None:
-        return ""
-    try:
-        if pd.isna(value):
-            return ""
-    except (TypeError, ValueError):
-        pass
-    if isinstance(value, bool):
-        return str(value)
-    if isinstance(value, Integral):
-        return str(int(value))
-    if isinstance(value, Real):
-        number = float(value)
-        if number == int(number) and abs(number) < 1e15:
-            return str(int(number))
-        text = f"{number:.3f}".rstrip("0").rstrip(".")
-        return text or "0"
-    return str(value)
+def _build_column_config(frame: pd.DataFrame, columns: list[str]) -> dict[str, st.column_config.Column]:
+    """Column display config: pin method, format numbers to three decimals."""
+    config: dict[str, st.column_config.Column] = {}
+    for column in columns:
+        if column not in frame.columns:
+            continue
+        series = frame[column]
+        if column == "method":
+            config[column] = st.column_config.TextColumn(column, pinned=True, width="large")
+        elif pd.api.types.is_bool_dtype(series):
+            config[column] = st.column_config.CheckboxColumn(column)
+        elif pd.api.types.is_integer_dtype(series):
+            config[column] = st.column_config.NumberColumn(column, format="%d")
+        elif pd.api.types.is_float_dtype(series):
+            config[column] = st.column_config.NumberColumn(column, format="%.3f")
+    return config
 
 
-def _format_frame_for_display(frame: pd.DataFrame) -> pd.DataFrame:
-    out = frame.copy()
-    for column in out.columns:
-        if pd.api.types.is_numeric_dtype(out[column]):
-            out[column] = out[column].map(_format_display_value)
-    return out
+def _numeric_columns(frame: pd.DataFrame, columns: list[str]) -> list[str]:
+    return [
+        column
+        for column in columns
+        if column in frame.columns
+        and pd.api.types.is_numeric_dtype(frame[column])
+        and not pd.api.types.is_bool_dtype(frame[column])
+    ]
 
 
-def _escape_html(value: object) -> str:
-    text = _format_display_value(value)
-    return (
-        text.replace("&", "&amp;")
-        .replace("<", "&lt;")
-        .replace(">", "&gt;")
-        .replace('"', "&quot;")
-    )
+def _apply_color_scale(frame: pd.DataFrame, columns: list[str]):
+    numeric = _numeric_columns(frame, columns)
+    if not numeric:
+        return frame
+    return frame.style.background_gradient(cmap="viridis", subset=numeric, axis=0)
 
 
-def _column_min_width(column: str) -> int:
-    return METHOD_COL_MIN_WIDTH_PX if column == "method" else DEFAULT_COL_MIN_WIDTH_PX
-
-
-def _apply_table_view_controls(data: pd.DataFrame, cols: list[str], name: str) -> tuple[pd.DataFrame, list[str]]:
+def _apply_table_view_controls(data: pd.DataFrame, cols: list[str], name: str) -> tuple[pd.DataFrame, list[str], bool]:
     """Let users hide columns and filter rows before rendering."""
     with st.expander("Columns & rows", expanded=False):
         visible = st.multiselect(
@@ -428,51 +372,34 @@ def _apply_table_view_controls(data: pd.DataFrame, cols: list[str], name: str) -
                     filtered["mol_id"].astype(str).str.contains(mol_filter.strip(), case=False, na=False)
                 ]
 
-    return filtered.reset_index(drop=True), visible
+        color_by_value = st.checkbox(
+            "Color numeric columns by value",
+            value=False,
+            key=f"{name}_color_scale",
+            help="Heatmap per column (low → high). Sorting, pinning, and CSV export are unchanged.",
+        )
 
-
-def _render_sticky_table(frame: pd.DataFrame, columns: list[str], height_px: int = TABLE_HEIGHT_PX) -> None:
-    method_index = columns.index("method") if "method" in columns else None
-    rows = frame.to_dict(orient="records")
-
-    header_cells = []
-    for index, column in enumerate(columns):
-        class_attr = ' class="sticky-method"' if index == method_index else ""
-        width_style = f' style="min-width: {_column_min_width(column)}px;"'
-        header_cells.append(f"<th{class_attr}{width_style}>{_escape_html(column)}</th>")
-
-    body_rows = []
-    for row in rows:
-        cells = []
-        for index, column in enumerate(columns):
-            class_attr = ' class="sticky-method"' if index == method_index else ""
-            width_style = f' style="min-width: {_column_min_width(column)}px;"'
-            cells.append(f"<td{class_attr}{width_style}>{_escape_html(row.get(column))}</td>")
-        body_rows.append(f"<tr>{''.join(cells)}</tr>")
-
-    html = f"""
-    <div class="casf-table-wrap" style="max-height: {height_px}px;">
-      <table class="casf-table">
-        <thead><tr>{''.join(header_cells)}</tr></thead>
-        <tbody>{''.join(body_rows)}</tbody>
-      </table>
-    </div>
-    """
-    st.markdown(html, unsafe_allow_html=True)
+    return filtered.reset_index(drop=True), visible, color_by_value
 
 
 def display_table(frame: pd.DataFrame, columns: list[str], name: str) -> None:
     cols = [column for column in columns if column in frame.columns]
+    color_by_value = False
     if not cols:
         data = frame
-        st.dataframe(_format_frame_for_display(data), use_container_width=True, height=TABLE_HEIGHT_PX)
+        visible_cols = list(data.columns)
     else:
-        data, visible_cols = _apply_table_view_controls(frame[cols], cols, name)
-        display_data = _format_frame_for_display(data)
-        if "method" in visible_cols:
-            _render_sticky_table(display_data, visible_cols)
-        else:
-            st.dataframe(display_data, use_container_width=True, height=TABLE_HEIGHT_PX)
+        data, visible_cols, color_by_value = _apply_table_view_controls(frame[cols], cols, name)
+
+    display_data = _apply_color_scale(data, visible_cols) if color_by_value else data
+    st.dataframe(
+        display_data,
+        column_config=_build_column_config(data, visible_cols),
+        column_order=visible_cols,
+        use_container_width=True,
+        height=TABLE_HEIGHT_PX,
+        hide_index=True,
+    )
     st.download_button(
         f"Download {name} CSV",
         data=data.to_csv(index=False).encode("utf-8"),
@@ -568,7 +495,6 @@ def render_extended_analysis(db_path: Path, table_names: set[str]) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="CASF Analysis Dashboard", layout="wide")
-    st.markdown(STICKY_TABLE_CSS, unsafe_allow_html=True)
     st.title("CASF Analysis Dashboard")
 
     db_default = Path(os.environ.get("CASF_DASHBOARD_DB", str(DEFAULT_DB)))

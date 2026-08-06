@@ -1,5 +1,5 @@
 # Streamlit Community Cloud (and other hosts) — dashboard only
-streamlit>=1.30.0
+streamlit>=1.42.0
 pandas>=2.0.0
 numpy>=2.0.0
 -e .

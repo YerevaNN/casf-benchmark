@@ -15,7 +15,7 @@ dependencies = [
 
 [project.optional-dependencies]
 dashboard = [
-    "streamlit>=1.30.0",
+    "streamlit>=1.42.0",
 ]
 analysis = [
     "casf-benchmark[dashboard]",
