@@ -9,7 +9,7 @@ Installation, cluster paths, deployment, and optional tooling not covered in the
 | Dashboard only | `conda env create -f environment-dashboard.yml` → `streamlit run apps/dashboard/streamlit_app.py` |
 | Full pipeline | `conda env create -f environment-analysis.yml` → `pip install -e ".[dev]"` → `pytest tests/ -q` |
 
-Requires Python 3.10. Analysis env needs RDKit + zarr (via conda). Set `PYTHONPATH=src` for scripts.
+Requires Python 3.10+. Analysis env needs RDKit + zarr (via conda). Run `pip install -e ".[dev]"` once per environment; no `PYTHONPATH` needed.
 
 Large bundled files: `git lfs pull` if needed.
 
@@ -21,21 +21,21 @@ export CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian
 
 | Role | Path |
 | --- | --- |
-| Core/ref mapping CSV | `$CASF_BENCHMARK_DATA_ROOT/data/casf16/casf16_*_exact_intersection.csv` |
+| Core/ref mapping CSV | `$CASF_BENCHMARK_DATA_ROOT/data/casf16/casf16_*_exact_intersection.csv` (preferred default when present; bundled copy under `data/mapping/`) |
 | Intersection MOL2 | `.../CASF16/core_chembl3d_exact_intersection_ligands/` (or ref) |
 | ChEMBL3D topologies | `$CASF_BENCHMARK_DATA_ROOT/data/chembl3d/topologies/` |
 | RDKit/torsion output | `.../pharma_generation_analysis/{core,ref}_pb_full_dynamic_chembl_count/` |
 | External ML pools | `.../codex_dir/` (see [generation_methods.md](generation_methods.md)) |
 | Production dashboard DB | `.../pharma_generation_analysis/casf_analysis_dashboard.sqlite` |
 
-Defaults in [`src/casf_benchmark/paths.py`](../src/casf_benchmark/paths.py). Production analysis registry: [`config/casf_analysis_sources.weka.yaml`](../config/casf_analysis_sources.weka.yaml).
+Defaults in [`src/casf_benchmark/paths.py`](../src/casf_benchmark/paths.py). Production analysis registry: [`src/casf_benchmark/config/casf_analysis_sources.weka.yaml`](../src/casf_benchmark/config/casf_analysis_sources.weka.yaml).
 
 ## Cluster ingest
 
 After external inference on Weka:
 
 ```bash
-export CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian PYTHONPATH=src
+export CASF_BENCHMARK_DATA_ROOT=/mnt/weka/mbedrosian
 ./scripts/ingest_external_generation.sh REF /path/to/run qwen_4b_bigdata
 # or materialize + analyze separately — see materialization.md
 ```
@@ -64,14 +64,14 @@ Optional auto-mirror: add `PERSONAL_MIRROR_PAT` secret → [`.github/workflows/m
 [`scripts/extended_casf_analysis.py`](../scripts/extended_casf_analysis.py) computes K-efficiency, paired deltas, frontier ranks from the dashboard DB → `extended_analysis/` + [`extended_casf_analysis.sqlite`](../data/results/extended_casf_analysis.sqlite). Results: [casf16_hypothesis.md](casf16_hypothesis.md) · [casf16-core-hypothesis-assessment.md](casf16-core-hypothesis-assessment.md).
 
 ```bash
-python scripts/extended_casf_analysis.py --skip-k-efficiency
-python scripts/extended_casf_analysis.py --recompute-k-rmsd --k-workers 8
+casf-extended-analysis --skip-k-efficiency
+casf-extended-analysis --recompute-k-rmsd --k-workers 8
 ```
 
 ## Repository layout
 
 ```
-config/          YAML catalogs
+src/casf_benchmark/config/   YAML catalogs (packaged)
 data/mapping/    intersection CSVs (bundled)
 data/results/    dashboard SQLite, per-run analysis CSVs
 docs/            this documentation set

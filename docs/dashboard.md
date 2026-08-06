@@ -4,7 +4,7 @@ Read-only Streamlit UI over precomputed analysis SQLite.
 
 **App:** [`apps/dashboard/streamlit_app.py`](../apps/dashboard/streamlit_app.py)  
 **Build scripts:** [`scripts/build_casf_analysis_master_csv.py`](../scripts/build_casf_analysis_master_csv.py) · [`scripts/build_casf_analysis_dashboard_db.py`](../scripts/build_casf_analysis_dashboard_db.py)  
-**Config:** [`config/casf_analysis_sources.yaml`](../config/casf_analysis_sources.yaml) (repo-relative) · [`config/casf_analysis_sources.weka.yaml`](../config/casf_analysis_sources.weka.yaml) (cluster)
+**Config:** [`src/casf_benchmark/config/casf_analysis_sources.yaml`](../src/casf_benchmark/config/casf_analysis_sources.yaml) (repo-relative) · [`src/casf_benchmark/config/casf_analysis_sources.weka.yaml`](../src/casf_benchmark/config/casf_analysis_sources.weka.yaml) (cluster)
 
 ## Data flow
 
@@ -28,7 +28,7 @@ Override: `CASF_DASHBOARD_DB`, `CASF_EXTENDED_DB` (extended tab — [`data/resul
 | `comparison_strata` | Same, split by rotatable-bond / heavy-atom bins |
 | `per_ligand_long` | Full per-ligand metrics |
 | `analysis_sources` | Run roots from YAML |
-| `catalog_families` | From [`casf_generation_families.yaml`](../config/casf_generation_families.yaml) |
+| `catalog_families` | From [`casf_generation_families.yaml`](../src/casf_benchmark/config/casf_generation_families.yaml) |
 
 ## UI
 
@@ -42,10 +42,9 @@ Per-table **Columns & rows** expander: hide columns; filter by method, stratum, 
 # View (minimal env — see extras.md)
 streamlit run apps/dashboard/streamlit_app.py
 
-# Rebuild DB from bundled per-run CSVs
-export PYTHONPATH=src
-python scripts/build_casf_analysis_master_csv.py
-python scripts/build_casf_analysis_dashboard_db.py
+# Rebuild DB from bundled per-run CSVs (after pip install -e ".[dev]")
+casf-build-master-csv
+casf-build-dashboard-db
 
 # Full cluster rebuild (all sources + reference runs)
 sbatch scripts/run_pb_once_casf_analysis.sbatch

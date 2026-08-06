@@ -15,7 +15,7 @@ CASF MOL2 panel  +  ChEMBL3D index / topologies / zarr
 
 | Cohort | CASF ligands | Output CSV | Intersection ligands |
 | --- | --- | --- | --- |
-| Core | [`CASF16/ligands`](../data/mapping/) | `casf16_core_chembl3d_exact_intersection.csv` | `CASF16/core_chembl3d_exact_intersection_ligands/` |
+| Core | Weka `CASF16/ligands` (see [extras.md](extras.md#weka-paths)) | `casf16_core_chembl3d_exact_intersection.csv` | `CASF16/core_chembl3d_exact_intersection_ligands/` |
 | Ref | `CASF16_REF/ligands` | `casf16_ref_chembl3d_exact_intersection.csv` | `CASF16_REF/ref_chembl3d_exact_intersection_ligands/` |
 
 Bundled CSVs: [`data/mapping/`](../data/mapping/). Cluster paths: [extras.md](extras.md#weka-paths).
@@ -69,15 +69,15 @@ For each matched SMILES, take the first hit with resolvable topology. Run `prepa
 ## Commands
 
 ```bash
-cd casf-benchmark && export PYTHONPATH=src
+cd casf-benchmark  # pip install -e ".[dev]" once
 
 # Core (~94 ligands)
-python scripts/match_casf16_chembl3d_exact.py \
+casf-match-casf16-chembl3d \
   --ligand-dir $CASF_BENCHMARK_DATA_ROOT/data/casf16/CASF16/ligands \
   --output-csv $CASF_BENCHMARK_DATA_ROOT/data/casf16/casf16_core_chembl3d_exact_intersection.csv
 
 # Ref (~1219 ligands) — must pass --output-csv (script default is core path)
-python scripts/match_casf16_chembl3d_exact.py \
+casf-match-casf16-chembl3d \
   --ligand-dir $CASF_BENCHMARK_DATA_ROOT/data/casf16/CASF16_REF/ligands \
   --output-csv $CASF_BENCHMARK_DATA_ROOT/data/casf16/casf16_ref_chembl3d_exact_intersection.csv
 ```
@@ -114,8 +114,8 @@ Use `cp` instead of `ln -sf` for portable copies. **Validation:** `*.mol2` count
 1. CASF MOL2 panel on disk  
 2. ChEMBL3D index + topologies (+ zarr for reference analysis)  
 3. Intersection CSV + populated ligand directory  
-4. RDKit; `PYTHONPATH=src`
+4. RDKit; `pip install -e ".[dev]"`
 
-Optional panel characterization: [`scripts/analyze_casf16_ligands.py`](../scripts/analyze_casf16_ligands.py) → `ligand_descriptors.csv` (not required).
+Optional panel characterization: `casf-analyze-casf16-ligands` → `ligand_descriptors.csv` (not required).
 
 See also: [generation_methods.md](generation_methods.md) · [analyzer.md](analyzer.md)

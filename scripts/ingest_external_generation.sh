@@ -71,7 +71,6 @@ else
 fi
 
 CHEMBL_DATASET_ROOT="${WEKA_ROOT}/data/chembl3d"
-export PYTHONPATH="${REPO_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
 
 MATERIALIZE=( "${PYTHON}" "${REPO_ROOT}/scripts/materialize_casf_generation_sets.py"
   --root "${RUN_ROOT}"

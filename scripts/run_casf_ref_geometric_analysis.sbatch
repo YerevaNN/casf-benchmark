@@ -24,8 +24,6 @@ if [[ -z "${ANALYSIS_WORKERS}" ]]; then
   exit 1
 fi
 
-export PYTHONPATH="${REPO_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
-
 if [[ -n "${PYTHON:-}" && -x "${PYTHON}" ]]; then
   :
 elif [[ -x /home/mbedrosian/.conda/envs/chembl3d/bin/python ]]; then

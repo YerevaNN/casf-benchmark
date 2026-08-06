@@ -4,7 +4,7 @@ Conformer generation for the CASF–ChEMBL3D intersection panel: in-repo RDKit/t
 
 **Generator:** [`src/casf_benchmark/generation/conformer_sets.py`](../src/casf_benchmark/generation/conformer_sets.py)  
 **Slurm:** [`scripts/submit_casf.sh`](../scripts/submit_casf.sh) · [`scripts/run_casf_ref_conformer_molecule.sbatch`](../scripts/run_casf_ref_conformer_molecule.sbatch) · [`scripts/run_casf_ref_conformer_merge.sbatch`](../scripts/run_casf_ref_conformer_merge.sbatch)  
-**Catalog:** [`config/casf_generation_families.yaml`](../config/casf_generation_families.yaml)
+**Catalog:** [`src/casf_benchmark/config/casf_generation_families.yaml`](../src/casf_benchmark/config/casf_generation_families.yaml)
 
 ## Inputs
 
@@ -107,8 +107,6 @@ Key fields: `mol_id`, `input_smiles`, `source_input`, `generation_method`, `set_
 ## Commands
 
 ```bash
-export PYTHONPATH=src
-
 # Production Slurm (one ligand per array task + merge job)
 ./scripts/submit_casf.sh generate core   # or: ref
 
@@ -153,7 +151,7 @@ Worker processes set `OMP/MKL/OPENBLAS/NUMEXPR_NUM_THREADS=1` to avoid oversubsc
 
 ## External learned models
 
-Inference runs **outside** this repo. Register in [`config/casf_generation_families.yaml`](../config/casf_generation_families.yaml).
+Inference runs **outside** this repo. Register in [`src/casf_benchmark/config/casf_generation_families.yaml`](../src/casf_benchmark/config/casf_generation_families.yaml).
 
 ### Raw output contract (before materialization)
 
@@ -187,6 +185,6 @@ After inference → [materialization.md](materialization.md) → [analyzer.md](a
 
 ## Dependencies
 
-RDKit, PoseBusters, pandas. CPU only. `PYTHONPATH=src`.
+RDKit, PoseBusters, pandas. CPU only. Install with `pip install -e ".[dev]"`.
 
 See also: [data_preparation.md](data_preparation.md) · [materialization.md](materialization.md)

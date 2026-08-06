@@ -95,17 +95,15 @@ Bundled per-run CSVs: [`data/results/runs/{run_id}/`](../data/results/runs/). Re
 ## Commands
 
 ```bash
-export PYTHONPATH=src
-
 # Single run root (generation)
-python scripts/analyze_casf_conformer_sets.py \
+casf-analyze-conformer-sets \
   --run-root /path/to/run \
   --chembl-map-csv data/mapping/casf16_core_chembl3d_exact_intersection.csv \
   --casf-ligand-dir /path/to/core_chembl3d_exact_intersection_ligands \
   --workers 48 --resume-parts --quiet-rdkit-warnings
 
 # Reference baselines
-python scripts/analyze_casf_conformer_sets.py \
+casf-analyze-conformer-sets \
   --run-root /path/to/reference_datasets/core \
   --reference-only --ligand-set core --workers 24
 
@@ -133,9 +131,9 @@ Worker threads limited via `OMP/MKL/OPENBLAS/NUMEXPR/RDKIT_NUM_THREADS=1`.
 
 ## Aggregation (downstream)
 
-Per-run `geometric_per_ligand_long.csv` files merge via [`scripts/build_casf_analysis_master_csv.py`](../scripts/build_casf_analysis_master_csv.py) and [`scripts/build_casf_analysis_dashboard_db.py`](../scripts/build_casf_analysis_dashboard_db.py) using [`config/casf_analysis_sources.yaml`](../config/casf_analysis_sources.yaml). See [dashboard.md](dashboard.md).
+Per-run `geometric_per_ligand_long.csv` files merge via `casf-build-master-csv` and `casf-build-dashboard-db` using [`src/casf_benchmark/config/casf_analysis_sources.yaml`](../src/casf_benchmark/config/casf_analysis_sources.yaml). See [dashboard.md](dashboard.md).
 
-Optional extended stats: [`scripts/extended_casf_analysis.py`](../scripts/extended_casf_analysis.py) — see [extras.md](extras.md).
+Optional extended stats: `casf-extended-analysis` — see [extras.md](extras.md).
 
 ## Design rationale
 

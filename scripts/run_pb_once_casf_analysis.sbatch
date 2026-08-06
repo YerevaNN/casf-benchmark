@@ -23,13 +23,12 @@ set -euo pipefail
 : "${REFERENCE_WORKERS:=24}"
 : "${GENERATION_WORKERS:=48}"
 
-export PYTHONPATH="${REPO_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
-export MOLGEN3D_QUIET_RDKIT_WARNINGS=1
+export CASF_QUIET_RDKIT_WARNINGS=1
 
 ANALYZER="${REPO_ROOT}/scripts/analyze_casf_conformer_sets.py"
 MASTER_BUILDER="${REPO_ROOT}/scripts/build_casf_analysis_master_csv.py"
 DASHBOARD_BUILDER="${REPO_ROOT}/scripts/build_casf_analysis_dashboard_db.py"
-ANALYSIS_CONFIG="${REPO_ROOT}/config/casf_analysis_sources.weka.yaml"
+ANALYSIS_CONFIG="${REPO_ROOT}/src/casf_benchmark/config/casf_analysis_sources.weka.yaml"
 DASHBOARD_DB="/mnt/weka/mbedrosian/pharma_generation_analysis/casf_analysis_dashboard.sqlite"
 MASTER_CSV="/mnt/weka/mbedrosian/pharma_generation_analysis/casf_analysis_master.csv"
 PER_LIGAND_LONG_CSV="/mnt/weka/mbedrosian/pharma_generation_analysis/casf_per_ligand_long.csv"

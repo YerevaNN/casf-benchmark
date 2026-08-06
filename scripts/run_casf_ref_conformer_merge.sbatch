@@ -17,8 +17,6 @@ set -euo pipefail
 : "${CHEMBL_MAP_CSV:?CHEMBL_MAP_CSV must be set}"
 : "${OUTPUT_DIR:?OUTPUT_DIR must be set}"
 
-export PYTHONPATH="${REPO_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
-
 if [[ -n "${PYTHON:-}" && -x "${PYTHON}" ]]; then
   :
 elif [[ -x /home/mbedrosian/.conda/envs/chembl3d/bin/python ]]; then

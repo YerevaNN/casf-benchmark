@@ -28,8 +28,6 @@ export OMP_NUM_THREADS=1
 export MKL_NUM_THREADS=1
 export OPENBLAS_NUM_THREADS=1
 export NUMEXPR_NUM_THREADS=1
-export PYTHONPATH="${REPO_ROOT}/src${PYTHONPATH:+:${PYTHONPATH}}"
-
 if [[ -n "${PYTHON:-}" && -x "${PYTHON}" ]]; then
   :
 elif [[ -x /home/mbedrosian/.conda/envs/chembl3d/bin/python ]]; then

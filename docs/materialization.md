@@ -36,31 +36,29 @@ For each source pool and ligand ([`normalizer.py`](../src/casf_benchmark/generat
 ## Commands
 
 ```bash
-export PYTHONPATH=src
-
-python scripts/materialize_casf_generation_sets.py \
+casf-materialize-generation-sets \
   --root /path/to/run \
   --chembl-map-csv data/mapping/casf16_core_chembl3d_exact_intersection.csv \
   --ligand-dir /path/to/ligands \
   --method loqi_raw
 
 # All methods in manifest
-python scripts/materialize_casf_generation_sets.py --root /path/to/qwen_gens
+casf-materialize-generation-sets --root /path/to/qwen_gens
 
 # Array-style + merge
-python scripts/materialize_casf_generation_sets.py --root ... --molecule-offset 0 --limit-molecules 1 --write-manifest-part
-python scripts/materialize_casf_generation_sets.py --root ... --merge-manifest-parts
+casf-materialize-generation-sets --root ... --molecule-offset 0 --limit-molecules 1 --write-manifest-part
+casf-materialize-generation-sets --root ... --merge-manifest-parts
 
 # Validate layout only
-python scripts/materialize_casf_generation_sets.py --root ... --validate-only
+casf-materialize-generation-sets --root ... --validate-only
 ```
 
 Useful flags: `--fixed-set-size`, `--posebusters-workers`, `--quarantine-wrong-qwen-artifacts`, `--restore-manifest-backup`.
 
 ## Next steps
 
-1. [`analyze_casf_conformer_sets.py`](../scripts/analyze_casf_conformer_sets.py) on `--root`  
-2. Add run to [`config/casf_analysis_sources.yaml`](../config/casf_analysis_sources.yaml)  
+1. `casf-analyze-conformer-sets` on `--root`  
+2. Add run to [`src/casf_benchmark/config/casf_analysis_sources.yaml`](../src/casf_benchmark/config/casf_analysis_sources.yaml)  
 3. Rebuild dashboard — [dashboard.md](dashboard.md)
 
 See also: [generation_methods.md](generation_methods.md) · [extras.md](extras.md#cluster-ingest)
