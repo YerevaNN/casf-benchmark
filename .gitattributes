@@ -1,3 +1,4 @@
-data/results/casf_per_ligand_long.csv filter=lfs diff=lfs merge=lfs -text
-data/results/casf_analysis_dashboard.sqlite filter=lfs diff=lfs merge=lfs -text
-data/results/runs/**/geometric_per_ligand_long.csv filter=lfs diff=lfs merge=lfs -text
+# Intentionally empty: result CSVs/SQLite are stored as normal Git blobs (not LFS
+# pointers). Declaring LFS filters here made Streamlit Community Cloud fail on
+# incremental "Pulling code changes" with exit status 1
+# ("files that should have been pointers, but weren't").
