@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import sqlite3
 from pathlib import Path
@@ -10,8 +11,21 @@ from pathlib import Path
 import pandas as pd
 import streamlit as st
 
-from casf_benchmark.dashboard_table_help import render_table_help
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB as _DEFAULT_EXTENDED_DB
+
+
+def _load_sibling_module(module_name: str):
+    """Load a .py sitting next to this Streamlit entrypoint (Cloud-safe)."""
+    path = Path(__file__).resolve().parent / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {module_name} from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+render_table_help = _load_sibling_module("table_help").render_table_help
 
 _DEFAULT_DB = DEFAULT_DASHBOARD_DB
 DEFAULT_DB = Path(os.environ.get("CASF_DASHBOARD_DB", str(_DEFAULT_DB)))
