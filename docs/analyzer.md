@@ -135,6 +135,32 @@ Per-run `geometric_per_ligand_long.csv` files merge via `casf-build-master-csv` 
 
 Optional extended stats: `casf-extended-analysis` — see [extras.md](extras.md).
 
+### Extended ChEMBL K and energy-window analyses
+
+`casf-extended-analysis` reuses the dashboard DB plus per-run conformer artifacts
+when they are available. It remains additive: the original dashboard DB and
+per-ligand tables are read-only inputs.
+
+ChEMBL3D-PB K-efficiency uses source/original ChEMBL conformer order for
+`first_k` rows and fixed-seed sampling without replacement for `random_k` rows.
+The default random configuration is 100 repeats with seed base `91001`.
+Aggregates are emitted for both `capped_at_available` (`min(K, n_available_pb)`)
+and `strict_at_least_k` (diagnostic rows over ligands with at least K PB-passing
+conformers). The primary denominator remains the full ligand universe.
+
+Energy-window analysis uses PB-passing conformers only and defines relative
+energy per ligand/method:
+
+```text
+deltaE_i = energy_i - min_energy_for_that_method_and_ligand
+```
+
+Windows are `all`, `deltaE_5`, `deltaE_10`, `deltaE_20`, and diagnostic
+`deltaE_50`. Window-empty ligands count as misses in aggregate hit rates, while
+`n_ligands_with_window_confs` reports retained coverage. One-Angstrom greedy
+clusters, cluster entropy, largest-cluster fraction, pairwise RMSD summaries, and
+low-energy useful cluster counts are recomputed inside each window.
+
 ## Design rationale
 
 - Manifest-trusted PB for generation avoids duplicate validation cost while analyzing the same SDF conformers.

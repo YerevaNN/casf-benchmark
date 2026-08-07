@@ -108,6 +108,102 @@ def test_k_efficiency_ligand_rows_caps_at_available_conformers() -> None:
     assert by_k[1]["ligand_has_at_least_k"] == 1
 
 
+def test_chembl_k_aggregate_keeps_capped_and_strict_denominators() -> None:
+    rows = pd.DataFrame(
+        [
+            _chembl_k_row("a", 5, 5, 0.4),
+            _chembl_k_row("b", 2, 2, 0.6),
+            _chembl_k_row("c", 0, 0, float("nan")),
+        ]
+    )
+
+    summary = extended.aggregate_chembl_k_rows(rows)
+    capped = summary[summary["summary_mode"] == "capped_at_available"].iloc[0]
+    strict = summary[summary["summary_mode"] == "strict_at_least_k"].iloc[0]
+
+    assert capped["n_ligands"] == 3
+    assert capped["n_metric_ligands"] == 3
+    assert capped["n_ligands_with_pb"] == 2
+    assert capped["hit_0p75_at_k"] == 2 / 3
+    assert strict["n_ligands"] == 3
+    assert strict["n_metric_ligands"] == 1
+    assert strict["hit_0p75_at_k"] == 1.0
+
+
+def test_energy_window_aggregate_counts_window_empty_ligands_as_misses() -> None:
+    rows = pd.DataFrame(
+        [
+            _energy_window_row("a", "deltaE_10", 10, 2, 0.5, 1),
+            _energy_window_row("b", "deltaE_10", 10, 0, float("nan"), 0),
+        ]
+    )
+
+    summary = extended.aggregate_energy_window_rows(rows)
+    row = summary.iloc[0]
+
+    assert row["n_ligands"] == 2
+    assert row["n_ligands_with_window_confs"] == 1
+    assert row["hit_0p75_window"] == 0.5
+
+
+def _chembl_k_row(mol_id: str, n_available: int, n_used: int, best: float) -> dict[str, object]:
+    hit = float(best <= 0.75) if pd.notna(best) else 0.0
+    return {
+        "ligand_set": "core",
+        "run_id": "reference_core",
+        "run_label": "Core Reference",
+        "source": "chembl3d_gt_pb",
+        "family": "chembl3d_gt_pb",
+        "tier": "reference",
+        "method": "chembl3d_gt_pb",
+        "sampling_mode": "first_k",
+        "seed": float("nan"),
+        "k": 5,
+        "mol_id": mol_id,
+        "n_available_pb": n_available,
+        "n_used": n_used,
+        "casf_best_rmsd_at_k": best,
+        "casf_hit_0p25_at_k": 0.0,
+        "casf_hit_0p5_at_k": hit,
+        "casf_hit_0p75_at_k": hit,
+        "casf_hit_2p0_at_k": hit,
+    }
+
+
+def _energy_window_row(
+    mol_id: str,
+    window: str,
+    n_pb: int,
+    n_window: int,
+    best: float,
+    hit_0p75: int,
+) -> dict[str, object]:
+    return {
+        "ligand_set": "core",
+        "run_id": "run",
+        "run_label": "Run",
+        "source": "method_fixed",
+        "family": "method",
+        "tier": "fixed",
+        "method": "method_fixed",
+        "mol_id": mol_id,
+        "energy_window": window,
+        "n_pb_confs": n_pb,
+        "n_window_confs": n_window,
+        "fraction_window_confs": n_window / n_pb,
+        "casf_best_rmsd_window": best,
+        "casf_hit_0p25_window": 0,
+        "casf_hit_0p5_window": 0,
+        "casf_hit_0p75_window": hit_0p75,
+        "casf_hit_2p0_window": hit_0p75,
+        "greedy_clusters_1p0_window": float(n_window),
+        "clusters_per_100_1p0_window": float(n_window),
+        "cluster_entropy_1p0_window": 0.0,
+        "largest_cluster_fraction_1p0_window": 1.0 if n_window else float("nan"),
+        "useful_low_energy_clusters": float("nan"),
+    }
+
+
 def _row(
     source: str,
     row_type: str,
