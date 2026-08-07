@@ -5,12 +5,18 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import sys
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB as _DEFAULT_EXTENDED_DB
+
+_APP_DIR = Path(__file__).resolve().parent
+if str(_APP_DIR) not in sys.path:
+    sys.path.insert(0, str(_APP_DIR))
+from table_help import render_table_help
 
 _DEFAULT_DB = DEFAULT_DASHBOARD_DB
 DEFAULT_DB = Path(os.environ.get("CASF_DASHBOARD_DB", str(_DEFAULT_DB)))
@@ -526,6 +532,7 @@ def display_table(frame: pd.DataFrame, columns: list[str], name: str) -> None:
         file_name=f"{name}.csv",
         mime="text/csv",
     )
+    render_table_help(name)
 
 
 def filter_extended_table(
