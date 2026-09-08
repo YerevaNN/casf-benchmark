@@ -54,6 +54,111 @@ sources:
     ligand_set: ref
     root: data/results/runs/mcf_drugs_l_ref
 
+  - run_id: qwen_0p6b_4e_from_bigdata_step29600_core
+    label: "Qwen 0.6B 4e from bigdata step 29600 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_0p6b_4e_from_bigdata_step29600_core
+
+  - run_id: qwen_1p7b_4e_step29600_core
+    label: "Qwen 1.7B 4e step 29600 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_1p7b_4e_step29600_core
+
+  - run_id: qwen_1p7b_4e_step29600_ref
+    label: "Qwen 1.7B 4e step 29600 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_1p7b_4e_step29600_ref
+
+  - run_id: qwen_1p7b_bigdata_step74000_core
+    label: "Qwen 1.7B bigdata step 74000 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_1p7b_bigdata_step74000_core
+
+  - run_id: qwen_1p7b_bigdata_step74000_ref
+    label: "Qwen 1.7B bigdata step 74000 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_1p7b_bigdata_step74000_ref
+
+  - run_id: qwen_1p7b_4e_from_bigdata_step26400_core
+    label: "Qwen 1.7B 4e from bigdata step 26400 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_1p7b_4e_from_bigdata_step26400_core
+
+  - run_id: qwen_1p7b_4e_from_bigdata_step26400_ref
+    label: "Qwen 1.7B 4e from bigdata step 26400 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_1p7b_4e_from_bigdata_step26400_ref
+
+  - run_id: qwen_4b_4e_step20000_core
+    label: "Qwen 4B 4e step 20000 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_4b_4e_step20000_core
+
+  - run_id: qwen_4b_4e_step20000_ref
+    label: "Qwen 4B 4e step 20000 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_4b_4e_step20000_ref
+
+  - run_id: qwen_0p6b_fsq_6e_from_bigdata_step28320_core
+    label: "Qwen 0.6B FSQ 6e from bigdata step 28320 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_0p6b_fsq_6e_from_bigdata_step28320_core
+
+  - run_id: qwen_0p6b_fsq_6e_from_bigdata_step28320_ref
+    label: "Qwen 0.6B FSQ 6e from bigdata step 28320 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_0p6b_fsq_6e_from_bigdata_step28320_ref
+
+  - run_id: qwen_1p7b_fsq_6e_from_bigdata_step28320_core
+    label: "Qwen 1.7B FSQ 6e from bigdata step 28320 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_1p7b_fsq_6e_from_bigdata_step28320_core
+
+  - run_id: qwen_1p7b_fsq_6e_from_bigdata_step28320_ref
+    label: "Qwen 1.7B FSQ 6e from bigdata step 28320 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_1p7b_fsq_6e_from_bigdata_step28320_ref
+
+  - run_id: qwen_4b_bigdata_step110000_core
+    label: "Qwen 4B bigdata step 110000 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_4b_bigdata_step110000_core
+
+  - run_id: qwen_4b_bigdata_step110000_ref
+    label: "Qwen 4B bigdata step 110000 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_4b_bigdata_step110000_ref
+
+  - run_id: qwen_4b_4e_from_bigdata_step20000_core
+    label: "Qwen 4B 4e from bigdata step 20000 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_4b_4e_from_bigdata_step20000_core
+
+  - run_id: qwen_4b_4e_from_bigdata_step20000_ref
+    label: "Qwen 4B 4e from bigdata step 20000 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_4b_4e_from_bigdata_step20000_ref
+
+  - run_id: qwen_0p6b_fsq_bigdata_step70534_core
+    label: "Qwen 0.6B FSQ bigdata step 70534 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_0p6b_fsq_bigdata_step70534_core
+
+  - run_id: qwen_0p6b_fsq_bigdata_step70534_ref
+    label: "Qwen 0.6B FSQ bigdata step 70534 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_0p6b_fsq_bigdata_step70534_ref
+
+  - run_id: qwen_1p7b_fsq_bigdata_step47023_core
+    label: "Qwen 1.7B FSQ bigdata step 47023 (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_1p7b_fsq_bigdata_step47023_core
+
+  - run_id: qwen_1p7b_fsq_bigdata_step47023_ref
+    label: "Qwen 1.7B FSQ bigdata step 47023 (ref)"
+    ligand_set: ref
+    root: data/results/runs/qwen_1p7b_fsq_bigdata_step47023_ref
+
 reference_sources:
   - run_id: reference_core
     label: "Reference datasets (core)"

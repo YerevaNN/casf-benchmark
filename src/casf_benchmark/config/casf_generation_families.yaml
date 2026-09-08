@@ -130,6 +130,72 @@ families:
     core_root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_core_mcf_drugs_l_1k
     ref_root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_ref_mcf_drugs_l_1k
 
+  - id: qwen_0p6b_4e_from_bigdata_step29600
+    display_label: "Qwen 0.6B 4e from bigdata (step 29600)"
+    method_prefix: qwen_0p6b_4e_from_bigdata_step29600
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_4e_from_bigdata_step29600_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_4e_from_bigdata_step29600_ref
+
+  - id: qwen_1p7b_4e_step29600
+    display_label: "Qwen 1.7B 4e (step 29600)"
+    method_prefix: qwen_1p7b_4e_step29600
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_4e_step29600_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_4e_step29600_ref
+
+  - id: qwen_1p7b_bigdata_step74000
+    display_label: "Qwen 1.7B bigdata (step 74000)"
+    method_prefix: qwen_1p7b_bigdata_step74000
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_bigdata_step74000_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_bigdata_step74000_ref
+
+  - id: qwen_1p7b_4e_from_bigdata_step26400
+    display_label: "Qwen 1.7B 4e from bigdata (step 26400)"
+    method_prefix: qwen_1p7b_4e_from_bigdata_step26400
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_4e_from_bigdata_step26400_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_4e_from_bigdata_step26400_ref
+
+  - id: qwen_4b_4e_step20000
+    display_label: "Qwen 4B 4e (step 20000)"
+    method_prefix: qwen_4b_4e_step20000
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_4b_4e_step20000_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_4b_4e_step20000_ref
+
+  - id: qwen_0p6b_fsq_6e_from_bigdata_step28320
+    display_label: "Qwen 0.6B FSQ 6e from bigdata (step 28320)"
+    method_prefix: qwen_0p6b_fsq_6e_from_bigdata_step28320
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_fsq_6e_from_bigdata_step28320_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_fsq_6e_from_bigdata_step28320_ref
+
+  - id: qwen_1p7b_fsq_6e_from_bigdata_step28320
+    display_label: "Qwen 1.7B FSQ 6e from bigdata (step 28320)"
+    method_prefix: qwen_1p7b_fsq_6e_from_bigdata_step28320
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_fsq_6e_from_bigdata_step28320_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_fsq_6e_from_bigdata_step28320_ref
+
+  - id: qwen_4b_bigdata_step110000
+    display_label: "Qwen 4B bigdata (step 110000)"
+    method_prefix: qwen_4b_bigdata_step110000
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_4b_bigdata_step110000_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_4b_bigdata_step110000_ref
+
+  - id: qwen_4b_4e_from_bigdata_step20000
+    display_label: "Qwen 4B 4e from bigdata (step 20000)"
+    method_prefix: qwen_4b_4e_from_bigdata_step20000
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_4b_4e_from_bigdata_step20000_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_4b_4e_from_bigdata_step20000_ref
+
+  - id: qwen_0p6b_fsq_bigdata_step70534
+    display_label: "Qwen 0.6B FSQ bigdata (step 70534)"
+    method_prefix: qwen_0p6b_fsq_bigdata_step70534
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_fsq_bigdata_step70534_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_fsq_bigdata_step70534_ref
+
+  - id: qwen_1p7b_fsq_bigdata_step47023
+    display_label: "Qwen 1.7B FSQ bigdata (step 47023)"
+    method_prefix: qwen_1p7b_fsq_bigdata_step47023
+    core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_fsq_bigdata_step47023_core
+    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_1p7b_fsq_bigdata_step47023_ref
+
 reference:
   ligand_sets:
     core:

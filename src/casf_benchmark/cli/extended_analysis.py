@@ -28,6 +28,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+import yaml
 
 
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB, REPO_ROOT
@@ -61,6 +62,17 @@ K_EFFICIENCY_SOURCES = (
     "qwen_1p7b_revisited_fixed",
     "qwen_4b_bigdata_fixed",
     "qwen_4b_revisited_fixed",
+    "qwen_0p6b_4e_from_bigdata_step29600_fixed",
+    "qwen_0p6b_fsq_6e_from_bigdata_step28320_fixed",
+    "qwen_0p6b_fsq_bigdata_step70534_fixed",
+    "qwen_1p7b_4e_step29600_fixed",
+    "qwen_1p7b_4e_from_bigdata_step26400_fixed",
+    "qwen_1p7b_bigdata_step74000_fixed",
+    "qwen_1p7b_fsq_6e_from_bigdata_step28320_fixed",
+    "qwen_1p7b_fsq_bigdata_step47023_fixed",
+    "qwen_4b_4e_step20000_fixed",
+    "qwen_4b_4e_from_bigdata_step20000_fixed",
+    "qwen_4b_bigdata_step110000_fixed",
 )
 K_EFFICIENCY_CHEMBL_BASELINE = "chembl3d_gt_pb"
 IDENTITY_COLUMNS = [
@@ -114,6 +126,39 @@ class OutputPaths:
     def mkdirs(self) -> None:
         for path in (self.tables, self.figures, self.reports):
             path.mkdir(parents=True, exist_ok=True)
+
+
+def apply_generation_root_overrides(analysis_sources: pd.DataFrame, path: Path) -> pd.DataFrame:
+    """Redirect the per-conformer readers to the run roots listed in `path`.
+
+    The dashboard only needs `analysis/tables/` under a run root, so it can be built
+    from roots that carry nothing else. K-efficiency and the energy windows also read
+    `generation/`, and this points them at a fuller copy of each run without
+    rebuilding the dashboard. Runs absent from the mapping keep their dashboard root.
+    """
+    payload = yaml.safe_load(path.read_text()) or {}
+    overrides: dict[str, str] = {
+        str(run_id): str(root) for run_id, root in (payload.get("generation_roots") or {}).items()
+    }
+    if not overrides:
+        print(f"WARNING: {path} lists no generation_roots; run roots left unchanged.", flush=True)
+        return analysis_sources
+
+    updated = analysis_sources.copy()
+    run_ids = updated["run_id"].astype(str)
+    updated["root"] = [
+        overrides.get(run_id, root) for run_id, root in zip(run_ids, updated["root"])
+    ]
+
+    known = set(run_ids)
+    print(f"Applied {len(known & set(overrides))} generation-root override(s) from {path}", flush=True)
+    unknown = sorted(set(overrides) - known)
+    if unknown:
+        print(f"WARNING: {len(unknown)} override(s) name run_id(s) absent from the dashboard: {', '.join(unknown)}", flush=True)
+    missing = sorted(known - set(overrides))
+    if missing:
+        print(f"WARNING: {len(missing)} run(s) have no override and keep their dashboard root: {', '.join(missing)}", flush=True)
+    return updated
 
 
 def read_table(db_path: Path, table: str) -> pd.DataFrame:
@@ -1185,7 +1230,7 @@ def _energy_window_payloads(
     }
     selected = pd.concat(
         [
-            generation_methods(per_ligand, fixed_only=True),
+            generation_methods(per_ligand),
             per_ligand[per_ligand["source"].astype(str) == K_EFFICIENCY_CHEMBL_BASELINE],
         ],
         ignore_index=True,
@@ -1542,6 +1587,7 @@ def build_k_efficiency(
     seed: int,
     workers: int,
     recompute_rmsd: bool,
+    allow_failures: bool = False,
 ) -> tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     payloads = _k_task_payloads(
         per_ligand,
@@ -1571,7 +1617,15 @@ def build_k_efficiency(
         write_csv(failure_report, failure_path)
         preview = "; ".join(failures[:5])
         suffix = f" (+{len(failures) - 5} more)" if len(failures) > 5 else ""
-        raise RuntimeError(f"K-efficiency failed for {len(failures)} task(s): {preview}{suffix}")
+        message = f"K-efficiency failed for {len(failures)} task(s): {preview}{suffix}"
+        if not allow_failures:
+            raise RuntimeError(message)
+        print(
+            f"WARNING: {message}\n"
+            f"WARNING: keeping the {len(all_rows)} task(s) that succeeded; the sources in "
+            f"{failure_path} are absent from every extended_k_efficiency* table.",
+            flush=True,
+        )
     if failure_path.exists():
         failure_path.unlink()
 
@@ -1606,11 +1660,8 @@ def build_k_efficiency(
     return total, strata_frame, ligand_rows
 
 
-def generation_methods(per_ligand: pd.DataFrame, fixed_only: bool = True) -> pd.DataFrame:
-    out = per_ligand[per_ligand["row_type"].astype(str) == "generation"].copy()
-    if fixed_only:
-        out = out[out["tier"].astype(str) == "fixed"]
-    return out
+def generation_methods(per_ligand: pd.DataFrame) -> pd.DataFrame:
+    return per_ligand[per_ligand["row_type"].astype(str) == "generation"].copy()
 
 
 def paired_metric_summary(paired: pd.DataFrame, threshold: float = 0.10) -> dict[str, float]:
@@ -1727,7 +1778,7 @@ def build_paired_delta_table(
     per_ligand: pd.DataFrame, baseline_source: str, include_strata: bool = True
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
     baseline_all = per_ligand[per_ligand["source"].astype(str) == baseline_source].copy()
-    methods = generation_methods(per_ligand, fixed_only=True)
+    methods = generation_methods(per_ligand)
     chembl_all = per_ligand[per_ligand["source"].astype(str) == "chembl3d_gt"].copy()
     methods = pd.concat([methods, chembl_all], ignore_index=True, sort=False)
 
@@ -1802,8 +1853,8 @@ def build_paired_delta_table(
     return pd.DataFrame(rows), detail_frame
 
 
-def aggregate_generation_rows(per_ligand: pd.DataFrame, fixed_only: bool = True) -> pd.DataFrame:
-    methods = generation_methods(per_ligand, fixed_only=fixed_only)
+def aggregate_generation_rows(per_ligand: pd.DataFrame) -> pd.DataFrame:
+    methods = generation_methods(per_ligand)
     rows: list[dict[str, object]] = []
     numeric_means = [
         "conformer_count",
@@ -1825,7 +1876,7 @@ def aggregate_generation_rows(per_ligand: pd.DataFrame, fixed_only: bool = True)
 
 
 def build_frontier_summary(per_ligand: pd.DataFrame) -> pd.DataFrame:
-    summary = aggregate_generation_rows(per_ligand, fixed_only=True)
+    summary = aggregate_generation_rows(per_ligand)
     if summary.empty:
         return summary
     summary["useful_clusters_per_100_confs"] = (
@@ -1907,7 +1958,7 @@ def build_pb_failure_tables(per_ligand: pd.DataFrame) -> tuple[pd.DataFrame, pd.
 
 def build_bound_pose_difficulty(per_ligand: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
     baseline_all = per_ligand[per_ligand["source"].astype(str) == "chembl3d_gt_pb"].copy()
-    methods = generation_methods(per_ligand, fixed_only=True)
+    methods = generation_methods(per_ligand)
     rows: list[dict[str, object]] = []
     rescue_cases: list[pd.DataFrame] = []
     rescue_sources = {"loqi_raw_fixed", "torsional_diffusion_raw_fixed", "rdkit_random_raw_fixed"}
@@ -2351,9 +2402,23 @@ def main() -> None:
     parser.add_argument("--k-workers", type=int, default=max(1, min(8, os.cpu_count() or 1)))
     parser.add_argument("--recompute-k-rmsd", action="store_true")
     parser.add_argument("--skip-k-efficiency", action="store_true")
+    parser.add_argument(
+        "--allow-k-efficiency-failures",
+        action="store_true",
+        help="Keep the tasks that succeeded instead of aborting, reporting the rest in "
+        "extended_k_efficiency_failures.csv.",
+    )
     parser.add_argument("--energy-window-workers", type=int, default=max(1, min(8, os.cpu_count() or 1)))
     parser.add_argument("--recompute-energy-window", action="store_true")
     parser.add_argument("--skip-energy-window", action="store_true")
+    parser.add_argument(
+        "--generation-root-overrides",
+        type=Path,
+        default=None,
+        help="YAML {generation_roots: {run_id: root}} pointing the per-conformer analyses "
+        "(K-efficiency, energy windows) at run roots that carry generation/. "
+        "Generate with scripts/build_generation_root_overrides.py.",
+    )
     parser.add_argument("--fail-on-sanity-error", action="store_true")
     parser.add_argument("--skip-analysis-1", action="store_true", default=True)
     args = parser.parse_args()
@@ -2364,6 +2429,10 @@ def main() -> None:
     per_ligand = data["per_ligand_long"]
     comparison_rows = data["comparison_rows"]
     analysis_sources = data["analysis_sources"]
+    if args.generation_root_overrides is not None:
+        analysis_sources = apply_generation_root_overrides(
+            analysis_sources, args.generation_root_overrides.resolve()
+        )
 
     sanity = build_sanity_checks(per_ligand, comparison_rows)
     write_csv(sanity, paths.tables / "extended_sanity_checks.csv")
@@ -2391,6 +2460,7 @@ def main() -> None:
             seed=args.k_seed,
             workers=args.k_workers,
             recompute_rmsd=args.recompute_k_rmsd,
+            allow_failures=args.allow_k_efficiency_failures,
         )
         chembl_k_eff, chembl_k_ligand_rows = build_chembl_k_efficiency(
             per_ligand,

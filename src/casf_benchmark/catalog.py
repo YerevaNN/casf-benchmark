@@ -9,7 +9,10 @@ from typing import Any
 
 import yaml
 
-from casf_benchmark.paths import DEFAULT_GENERATION_FAMILIES_CONFIG
+from casf_benchmark.paths import (
+    DEFAULT_GENERATION_FAMILIES_CONFIG,
+    DEFAULT_QWEN_GENERATION_RUNS_CONFIG,
+)
 
 DEFAULT_CATALOG_PATH = DEFAULT_GENERATION_FAMILIES_CONFIG
 TIERS = ("fixed", "dynamic", "chembl_count")
@@ -87,6 +90,32 @@ def load_reference_config(catalog_path: Path = DEFAULT_CATALOG_PATH) -> dict[str
     if not isinstance(reference, dict):
         raise ValueError("CASF catalog reference section must be a mapping")
     return reference
+
+
+@lru_cache(maxsize=8)
+def load_generation_runs(
+    cohort: str, config_path: Path = DEFAULT_QWEN_GENERATION_RUNS_CONFIG
+) -> tuple[tuple[str, str], ...]:
+    """Return ordered (checkpoint label, inference output dirname) pairs for `cohort`.
+
+    Checkpoints that were not run against `cohort` are omitted. Cohort names are the
+    `cohorts` keys in the config, e.g. `casf16_core`, `casf16_ref`, `druglike`.
+    """
+    with Path(config_path).open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"Generation runs config must be a mapping: {config_path}")
+    runs = []
+    for raw in data.get("runs", []):
+        if not isinstance(raw, dict):
+            raise ValueError(f"Generation run entry must be a mapping: {raw!r}")
+        dirname = (raw.get("cohorts") or {}).get(cohort)
+        if dirname:
+            runs.append((str(raw["label"]), str(dirname)))
+    labels = [label for label, _ in runs]
+    if len(labels) != len(set(labels)):
+        raise ValueError(f"Generation runs config has duplicate label(s) for cohort {cohort!r}")
+    return tuple(runs)
 
 
 def family_by_id(family_id: str, catalog_path: Path = DEFAULT_CATALOG_PATH) -> FamilySpec:

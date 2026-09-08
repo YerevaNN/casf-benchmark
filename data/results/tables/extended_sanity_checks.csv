@@ -1,0 +1,12 @@
+check,severity,status,affected_rows,details
+missing_required_columns,error,pass,0,
+duplicate_ligand_source_tier_rows,error,pass,0,key=ligand_set/mol_id/source/tier
+negative_casf_best_rmsd,error,pass,0,CASF best RMSD must be non-negative
+casf_hit_0p5_outside_0_1,error,pass,0,"hit values must be in [0, 1]"
+casf_hit_0p75_outside_0_1,error,pass,0,"hit values must be in [0, 1]"
+casf_hit_2p0_outside_0_1,error,pass,0,"hit values must be in [0, 1]"
+pb_pass_fail_count_mismatch,error,pass,0,pb_pass_confs + pb_fail_confs should equal pb_input_confs where all are present
+conformer_count_greater_than_pb_input,warn,pass,0,warning only because pre-PB versus post-PB semantics vary by source
+qwen_rotatable_bond_metadata_warning,warn,pass,0,flagged only; this task does not repair Qwen metadata
+stale_analysis_manifest_not_checked,warn,warn,1,"Analysis 1 was explicitly skipped, so manifest/SDF stale-output checks were not run"
+ligand_counts_by_run_source_tier,info,pass,0,154 run/source/tier count rows available
