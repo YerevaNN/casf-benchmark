@@ -6,6 +6,10 @@ checkpoints benchmarked on CASF16 core/ref, and a new **druglike** cohort of 23 
 drugs / clinical candidates — the code that runs them, what actually completed, and the
 headline numbers.
 
+Every figure below is traceable to a committed table, a SQLite DB or a batch log — see
+[§5 Provenance](#5-provenance-how-every-number-here-was-obtained) for the exact source of each
+one, the direction of each metric, and the caveats that bound the claims.
+
 Snapshot date: 2026-09-09. Commit range: [`a25bf7a`](https://github.com/YerevaNN/casf-benchmark/commit/a25bf7a) plus the batch drivers committed alongside this report.
 
 ---
@@ -229,7 +233,95 @@ disagree on the details, which is the useful part:
 
 ---
 
-## 5. Is the code on GitHub?
+## 5. Provenance: how every number here was obtained
+
+Nothing in this report is estimated or carried over from an earlier write-up. Each figure
+was read from a committed table, a SQLite DB or a batch log on 2026-09-09, at commit
+`a25bf7a`.
+
+| Claim | Source | Selection |
+| --- | --- | --- |
+| CASF16 tables (§4) | [`data/results/casf_analysis_master.csv`](../data/results/casf_analysis_master.csv) (committed) | `ligand_set ∈ {core, ref}`, `tier == "fixed"` |
+| CASF16 run status (§3) | `$CASF_RUNS_ROOT/_logs/batch_summary.log` + per-item `{label}_{cohort}.log` | `PASS`/`FAIL` lines of the 2026-08-18 sweep |
+| Per-run row counts | `data/results/runs/{run_id}/analysis/tables/geometric_per_ligand_long.csv` | `wc -l` − 1 |
+| Druglike PB / diversity / energy | `druglike_eval.sqlite` → `summary`, `per_molecule` | all 12 rows |
+| Druglike COV/MAT | `{run_dir}/eval_*/covmat_results.txt`, `rmsd_matrix.csv` | latest `eval_*` dir per checkpoint |
+| Druglike PB fail modes | `summary.pb_check_fail_counts_json` | summed over all 12 checkpoints |
+| Druglike set composition | `/mnt/weka/vtarasov/druglike_smi.pickle` | 23 keys; `confs` lengths summed = 2450 |
+| Published dashboard tables | `data/results/extended_casf_analysis.sqlite` | `extended_druglike_summary` = 12 rows, `extended_druglike_per_molecule` = 276 |
+| GitHub status (§6) | `git ls-tree upstream/qwen_runs_on_casf_and_druglike`, `git rev-list --left-right` | — |
+
+Weka locations: runs and logs under `/mnt/weka/vtarasov/outputs/casf_benchmark_runs/`,
+druglike eval under `.../casf_benchmark_runs/druglike_eval/`, inference output under
+`/mnt/weka/vtarasov/outputs/outputs/gen_results/`.
+
+### Metric directions and definitions
+
+- **Lower is better**: `best RMSD`, `median RMSD`, MAT-R, MAT-P, `E median`.
+- **Higher is better**: `hit@x`, COV-R, COV-P, PB pass rate. `clusters@1.0` is descriptive, not a score.
+- `best RMSD` — per ligand, the minimum RMSD over the pool to the crystal pose; the table
+  reports the mean of that over ligands (so it is a *best-of-pool* number, and it improves
+  with pool size — compare only at comparable `confs/lig`).
+- `median RMSD` — per ligand median over the pool, meaned over ligands; a pool-quality
+  measure rather than a recovery measure.
+- COV-R / MAT-R — recall side: how much of the ground-truth ensemble the pool covers
+  (fraction within 0.75 Å) and the mean nearest-generated distance to it. COV-P / MAT-P are
+  the precision-side mirror (how much of the pool is near the ground truth).
+
+### Caveats that bound the claims above
+
+1. **Only the `fixed` tier is compared.** `dynamic` and `chembl_count` exist for every run
+   and are not in these tables.
+2. **The RDKit baseline row is the *best* of four ETKDG variants** (lowest best-RMSD), so
+   the comparison is deliberately unfavourable to the Qwen models, not the reverse.
+3. **The `ref` cohort here is 1236 ligands**, the current CASF16-ref ∩ ChEMBL3D
+   intersection — not the 1219 in the older `casf_geometric_report_ref_1219_ligands.md` filename.
+4. **The legacy `qwen_core` run root is excluded.** It holds 11 *earlier* Qwen variants
+   under a single `run_id`, distinguished only by `variant`/`method`. Those rows are not the
+   11 new checkpoints and would otherwise be mistaken for them.
+5. **PB fail counts are per-check, per-conformer, summed across checkpoints.** One bad
+   conformer can contribute to several checks, so the counts do not sum to a conformer count.
+6. **COV/MAT means are over 23 molecules.** Small-n; the medians are given alongside, and
+   the COV-R mean/median split (0.74–0.91 vs 1.000) is itself evidence that a few hard
+   molecules dominate the mean.
+7. **The druglike ground truth pools conformers across PDB entries** (23–716 per molecule)
+   with no deduplication applied in this repo, so COV-P is bounded by how redundantly a
+   molecule was crystallized, not only by model quality.
+8. **Druglike energy is computed over the PB-passing subset only**, so energies are not
+   comparable across checkpoints with very different pass rates. CASF16 `E median` comes
+   from the analyzer's own tables and has no such filter.
+
+### Re-deriving the tables
+
+```bash
+# CASF16 tables (§4) — the exact selection used
+python - <<'PY'
+import pandas as pd
+df = pd.read_csv("data/results/casf_analysis_master.csv")
+d = df[(df.ligand_set == "core") & (df.tier == "fixed")]
+print(d[["run_id", "mean_confs_per_ligand", "casf_best_rmsd", "casf_median_rmsd",
+         "casf_hit_0p5", "casf_hit_2p0", "mean_clusters_1p0", "energy_median"]]
+      .sort_values("casf_best_rmsd").to_string(index=False))
+PY
+
+# Druglike table (§4)
+sqlite3 -header -csv \
+  /mnt/weka/vtarasov/outputs/casf_benchmark_runs/druglike_eval/druglike_eval.sqlite \
+  "select label, model_size, tokenizer, total_confs, overall_pb_pass_rate,
+          cov_r_mean, cov_r_median, mat_r_mean, cov_p_mean, mat_p_mean
+   from summary order by overall_pb_pass_rate desc;"
+
+# Run status (§3)
+grep -E 'PASS|FAIL|MISSING' /mnt/weka/vtarasov/outputs/casf_benchmark_runs/_logs/batch_summary.log
+grep -E 'PASS|FAIL|MISSING' /mnt/weka/vtarasov/outputs/casf_benchmark_runs/druglike_eval/_logs/batch_summary.log
+```
+
+Full pipeline reproduction (env vars and commands) is in
+[docs/extras.md](extras.md#qwen-checkpoint-batches).
+
+---
+
+## 6. Is the code on GitHub?
 
 Repository: [YerevaNN/casf-benchmark](https://github.com/YerevaNN/casf-benchmark), branch
 **`qwen_runs_on_casf_and_druglike`**.
@@ -264,7 +356,7 @@ Only `analysis/tables/geometric_per_ligand_long.csv` per run is committed under
 
 ---
 
-## 6. Known gaps and next steps
+## 7. Known gaps and next steps
 
 1. **`qwen_0p6b_4e_from_bigdata_step29600` / ref is still missing.** One degenerate-coordinate
    ligand (`5csp_5csp_conf0`) aborts the entire analyze step. Worth making the analyzer
