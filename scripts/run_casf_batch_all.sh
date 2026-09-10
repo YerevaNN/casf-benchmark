@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run scripts/run_casf_batch_item.sh for every (checkpoint, cohort) pair listed in
-# src/casf_benchmark/config/qwen_generation_runs.yaml, sequentially. Each item
+# src/casf_benchmark/config/generation_runs.yaml, sequentially. Each item
 # internally shards across the node's CPUs.
 #
 # Core items run first (~94 ligands, cheap) so results land early; ref items

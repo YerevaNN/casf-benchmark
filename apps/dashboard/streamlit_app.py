@@ -5,11 +5,13 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import threading
 from pathlib import Path
 
 import pandas as pd
 import streamlit as st
 
+from casf_benchmark import release_data
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB as _DEFAULT_EXTENDED_DB
 
 _DEFAULT_DB = DEFAULT_DASHBOARD_DB
@@ -358,6 +360,9 @@ EXTENDED_TABLES = {
         "table": "extended_druglike_summary",
         "columns": [
             "label",
+            # Present once the table is rebuilt for a non-Qwen generator; harmless
+            # while absent, since display_table() keeps only the columns that exist.
+            "generator",
             "model_size",
             "tokenizer",
             "recipe",
@@ -404,6 +409,49 @@ EXTENDED_TABLES = {
 }
 
 TABLE_HEIGHT_PX = 520
+
+# Serialises the release fetch: Streamlit may run several script threads at once
+# (a browser refresh mid-download is enough), and two of them writing the same
+# `.part` file would corrupt it.
+_FETCH_LOCK = threading.Lock()
+
+
+def ensure_db_available(path: Path) -> None:
+    """Download a missing dashboard DB from the pinned GitHub Release.
+
+    A no-op when the file is already on disk -- a Weka checkout or a local rebuild
+    keeps working exactly as before -- and when `path` is not one of the default
+    locations, so a DB the operator pointed us at is never overwritten. This is
+    what lets a fresh Streamlit Cloud clone, which has no DB at all, serve the
+    dashboard. See `casf_benchmark.release_data` for the env pins.
+    """
+    if path.exists() or not release_data.is_release_asset(path):
+        return
+
+    tag = release_data.release_tag()
+    status = st.empty()
+    bar = st.progress(0.0)
+
+    def on_progress(downloaded: int, total: int) -> None:
+        bar.progress(min(downloaded / total, 1.0) if total else 0.0)
+        total_text = f" / {total / 1e6:.0f} MB" if total else ""
+        status.caption(
+            f"Fetching {path.name} from release `{tag}` "
+            f"({downloaded / 1e6:.0f}{total_text})"
+        )
+
+    try:
+        with _FETCH_LOCK:
+            # Another script thread may have completed the download while we waited.
+            release_data.fetch_release_asset(path, progress=on_progress)
+    except Exception as error:  # noqa: BLE001 - surfaced to the user, not swallowed
+        st.error(
+            f"Could not fetch {path.name} from release `{tag}` "
+            f"of {release_data.release_repo()}: {error}"
+        )
+    finally:
+        bar.empty()
+        status.empty()
 
 
 @st.cache_data(show_spinner=False)
@@ -611,6 +659,7 @@ def render_extended_analysis(db_path: Path, table_names: set[str]) -> None:
             st.text_input("Extended DB", str(default_path), key="extended_db_path")
         ).expanduser()
 
+    ensure_db_available(extended_db_path)
     if not extended_db_path.exists():
         st.info(f"Extended DB not found: {extended_db_path}")
         return
@@ -667,9 +716,11 @@ def main() -> None:
 
     db_default = Path(os.environ.get("CASF_DASHBOARD_DB", str(DEFAULT_DB)))
     db_path = Path(st.sidebar.text_input("Dashboard DB", str(db_default))).expanduser()
+    ensure_db_available(db_path)
     if not db_path.exists():
         st.error(f"Dashboard DB not found: {db_path}")
         st.stop()
+    st.sidebar.caption(f"Dashboard data release: `{release_data.release_tag()}`")
 
     db_mtime_ns = db_path.stat().st_mtime_ns
     table_names = load_table_names(str(db_path), db_mtime_ns)

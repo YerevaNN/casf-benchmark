@@ -46,10 +46,18 @@ Slurm helpers: [`scripts/submit_casf.sh`](../scripts/submit_casf.sh), [`scripts/
 
 ## Qwen checkpoint batches
 
-Checkpoint labels and the inference output directory for each cohort live in one
-manifest, [`src/casf_benchmark/config/qwen_generation_runs.yaml`](../src/casf_benchmark/config/qwen_generation_runs.yaml)
-(read via `casf_benchmark.catalog.load_generation_runs`). Add a checkpoint there once
+Run labels and the inference output directory for each cohort live in one
+manifest, [`src/casf_benchmark/config/generation_runs.yaml`](../src/casf_benchmark/config/generation_runs.yaml)
+(read via `casf_benchmark.catalog.load_generation_runs`). Add a run there once
 and every batch script picks it up.
+
+The manifest is not Qwen-only: `label` is arbitrary text, so evaluating RDKit, loqi or
+any other generator on the druglike set is a new entry plus its eval CSVs, not a script
+fork, and the rows land in the same `extended_druglike_summary` /
+`extended_druglike_per_molecule` tables. An entry may also set `generator`,
+`display_label`, `model_size`, `tokenizer`, `recipe` or `step` to label itself; Qwen
+checkpoint labels already encode these and are parsed automatically
+(`casf_benchmark.catalog.describe_run`).
 
 Run the pickle → SDF/manifest → materialize → analyze pipeline for all checkpoints,
 core cohort first:
@@ -97,6 +105,39 @@ Org repos cannot authorize Streamlit’s GitHub App. Deploy from personal mirror
 
 1. [share.streamlit.io](https://share.streamlit.io) → `MenuaB/casf-benchmark` → main file `apps/dashboard/streamlit_app.py` → Python 3.10  
 2. Uses root [`requirements.txt`](../requirements.txt)
+
+No data setup is needed: the app itself fetches what it needs on first run, so a
+clone with no `data/results/*.sqlite` (which is every clone — both files are over
+GitHub's 100MB blob limit and LFS is off, so they are release assets, not commits)
+serves the full dashboard with no Weka or SSH access.
+
+### Dashboard data
+
+The two SQLite files the app opens are published as assets of a `dashboard-data-*`
+release. On startup, [`casf_benchmark.release_data`](../src/casf_benchmark/release_data.py)
+downloads either one that is missing from its default path under `data/results/`,
+and skips anything already there — so Weka and local rebuilds are untouched, and a
+DB you point the sidebar at yourself is never overwritten.
+
+| Asset | Feeds |
+| --- | --- |
+| `casf_analysis_dashboard.sqlite` (118MB) | the main tabs |
+| `extended_casf_analysis.sqlite` (95MB) | Extended Analysis, including the two druglike tabs |
+
+`casf_per_ligand_long.csv` is a rebuild input for the extended analysis, never read
+by the app, and is deliberately not fetchable.
+
+| Env | Default | Use |
+| --- | --- | --- |
+| `CASF_DASHBOARD_RELEASE` | `dashboard-data-qwen-druglike` | Pin the release tag, so republishing results is a new release plus an env change rather than a code change |
+| `CASF_DASHBOARD_RELEASE_REPO` | `YerevaNN/casf-benchmark` | Where the assets live, when the app is served from a mirror |
+
+Set these under *Settings → Secrets* (or *Advanced settings* at deploy time). The
+sidebar shows the tag in effect, so it is always visible which results are on screen.
+
+To publish a new set: rebuild the DBs (see [`scripts/rebuild_dashboard_weka.sh`](../scripts/rebuild_dashboard_weka.sh)),
+attach both to a new `dashboard-data-<name>` release, then point
+`CASF_DASHBOARD_RELEASE` at that tag.
 
 Sync mirror after YerevaNN pushes:
 

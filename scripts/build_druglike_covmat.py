@@ -13,7 +13,11 @@ hiding the extended_* tables that already live there.
 Inputs:
   - the druglike_eval.sqlite built by build_druglike_eval_db.py
   - {run_dir}/eval_*/covmat_results.txt and rmsd_matrix.csv, one run_dir per
-    checkpoint, resolved from the druglike entries in qwen_generation_runs.yaml
+    run, resolved from the druglike entries in generation_runs.yaml
+
+Generator-agnostic: `label` is whatever the catalog says, so pushing RDKit, loqi or
+any other method into the same two tables is a new YAML entry plus its eval outputs,
+never a change here.
 
 Outputs:
   - druglike_eval.sqlite summary/per_molecule enriched with COV-R/COV-P/MAT-R/MAT-P
@@ -30,28 +34,16 @@ from pathlib import Path
 
 import pandas as pd
 
-from casf_benchmark.catalog import load_generation_runs
+from casf_benchmark.catalog import (
+    RUN_DESCRIPTOR_FIELDS as DESCRIPTOR_COLUMNS,
+    describe_run,
+    load_generation_run_entries,
+)
 from casf_benchmark.paths import DEFAULT_EXTENDED_DB
 
 AGG_PATTERN = re.compile(
     r"\((?P<abbr>[A-Za-z-]+)\):\s*\n\s*Mean:\s*(?P<mean>[-\d.]+)\s*\n\s*Median:\s*(?P<median>[-\d.]+)"
 )
-
-
-SIZE_NAMES = {"0p6b": "0.6B", "1p7b": "1.7B", "4b": "4B"}
-LABEL_PATTERN = re.compile(r"^qwen_(0p6b|1p7b|4b)_(fsq_)?(.+?)_step(\d+)$")
-
-
-def parse_label(label: str) -> dict:
-    m = LABEL_PATTERN.match(label)
-    if not m:
-        return {"model_size": None, "tokenizer": None, "recipe": None, "step": None}
-    return {
-        "model_size": SIZE_NAMES.get(m.group(1), m.group(1)),
-        "tokenizer": "FSQ" if m.group(2) else "Binned",
-        "recipe": m.group(3).replace("_", " "),
-        "step": int(m.group(4)),
-    }
 
 
 def find_eval_dir(run_dir: Path) -> Path | None:
@@ -90,8 +82,8 @@ def main() -> None:
         "--generation-results-root",
         type=Path,
         required=True,
-        help="Root holding the per-checkpoint inference output directories named in "
-        "qwen_generation_runs.yaml",
+        help="Root holding the per-run inference output directories named in "
+        "generation_runs.yaml",
     )
     parser.add_argument(
         "--druglike-db",
@@ -116,7 +108,7 @@ def main() -> None:
     # Idempotent re-runs: drop any columns this script previously added, so
     # merging never collides with a prior run's output already sitting in
     # druglike_eval.sqlite.
-    parsed_cols = ["model_size", "tokenizer", "recipe", "step"]
+    parsed_cols = list(DESCRIPTOR_COLUMNS)
     covmat_summary_cols = [
         "threshold", "molecule_success_rate", "total_true_confs",
         "total_molecules_ground_truth", "n_missing_molecules",
@@ -133,8 +125,13 @@ def main() -> None:
 
     summary_rows = []
     per_mol_rows = []
+    descriptor_rows = []
     missing = []
-    for label, dirname in load_generation_runs("druglike"):
+    for entry in load_generation_run_entries():
+        dirname = entry.cohorts.get("druglike")
+        if not dirname:
+            continue
+        label = entry.label
         run_dir = args.generation_results_root / dirname
         eval_dir = find_eval_dir(run_dir)
         if eval_dir is None:
@@ -145,6 +142,7 @@ def main() -> None:
         agg = parse_covmat_summary(agg_text)
         agg["label"] = label
         summary_rows.append(agg)
+        descriptor_rows.append({"label": label, **describe_run(label, entry.descriptors)})
 
         rmsd = pd.read_csv(eval_dir / "rmsd_matrix.csv")
         rmsd = rmsd.rename(columns={"geom_smiles": "smiles"})
@@ -158,8 +156,12 @@ def main() -> None:
     covmat_per_mol = pd.concat(per_mol_rows, ignore_index=True) if per_mol_rows else pd.DataFrame()
 
     summary_enriched = summary.merge(covmat_summary, on="label", how="left")
-    parsed = summary_enriched["label"].apply(parse_label).apply(pd.Series)
-    summary_enriched = pd.concat([parsed, summary_enriched], axis=1)
+    descriptors = pd.DataFrame(descriptor_rows, columns=["label", *DESCRIPTOR_COLUMNS])
+    summary_enriched = summary_enriched.merge(descriptors, on="label", how="left")
+    # Descriptors read better as the leading columns of the table.
+    summary_enriched = summary_enriched[
+        [*DESCRIPTOR_COLUMNS, *[c for c in summary_enriched.columns if c not in DESCRIPTOR_COLUMNS]]
+    ]
     per_molecule_enriched = per_molecule.merge(
         covmat_per_mol.drop(columns=["sub_smiles"], errors="ignore"),
         on=["label", "smiles"],

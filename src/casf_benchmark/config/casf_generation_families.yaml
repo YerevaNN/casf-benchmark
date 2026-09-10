@@ -130,11 +130,23 @@ families:
     core_root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_core_mcf_drugs_l_1k
     ref_root: /mnt/weka/mbedrosian/codex_dir/mcf_drugs_l/generations/casf16_ref_mcf_drugs_l_1k
 
+  # Core-only, deliberately: unlike the other ten checkpoints below, the CASF16-ref
+  # analysis for this one has never produced tables, so there is no ref result to
+  # point at and claiming a ref_root here would show an empty ref view rather than an
+  # honest absence. Generation for ref did complete (1236/1236 materialized under
+  # .../qwen_0p6b_4e_from_bigdata_step29600_ref/generation), but the analysis pass
+  # aborts on a single degenerate conformer:
+  #   RuntimeError: CASF analysis failed for 5csp_5csp_conf0:
+  #     ValueError: atoms k and l have identical 3D coordinates
+  # 1235/1236 ligands are already cached under that root's analysis/cache, so once
+  # the analysis tolerates (or that ligand stops producing) coincident atoms, the
+  # rerun is minutes rather than the ~3h a cold ref pass takes -- add ref_root back
+  # plus a `qwen_0p6b_4e_from_bigdata_step29600_ref` source in casf_analysis_sources*.yaml
+  # and the `casf16_ref` cohort in generation_runs.yaml at that point.
   - id: qwen_0p6b_4e_from_bigdata_step29600
     display_label: "Qwen 0.6B 4e from bigdata (step 29600)"
     method_prefix: qwen_0p6b_4e_from_bigdata_step29600
     core_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_4e_from_bigdata_step29600_core
-    ref_root: /mnt/weka/vtarasov/outputs/casf_benchmark_runs/qwen_0p6b_4e_from_bigdata_step29600_ref
 
   - id: qwen_1p7b_4e_step29600
     display_label: "Qwen 1.7B 4e (step 29600)"

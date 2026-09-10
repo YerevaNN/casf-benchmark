@@ -22,3 +22,11 @@ data/results/extended_combined/*
 data/results/casf_analysis_dashboard.sqlite
 data/results/extended_casf_analysis.sqlite
 data/results/casf_per_ligand_long.csv
+
+# Partial downloads of the release assets above (see casf_benchmark/release_data.py).
+data/results/*.sqlite.part
+
+# Machine-specific log, not a result: one row per missing generation SDF, emitted
+# when the extended k-efficiency pass runs against bundled run roots that ship
+# analysis tables without the SDFs. ~10k rows of absolute Weka paths.
+data/results/tables/extended_k_efficiency_failures.csv

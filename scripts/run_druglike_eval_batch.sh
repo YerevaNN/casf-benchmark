@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Run scripts/eval_druglike_conformers.py for every druglike checkpoint listed in
-# src/casf_benchmark/config/qwen_generation_runs.yaml.
+# src/casf_benchmark/config/generation_runs.yaml.
 #
 # Idempotent: skips any label whose summary CSV is already present.
 #
