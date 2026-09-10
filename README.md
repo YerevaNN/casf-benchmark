@@ -36,6 +36,7 @@ Installs the package editable via `pip install -e ".[dev]"` (see `environment-an
 | [docs/materialization.md](docs/materialization.md) | External pool → tiered layout |
 | [docs/dashboard.md](docs/dashboard.md) | SQLite build + Streamlit |
 | [docs/extras.md](docs/extras.md) | Install, Weka paths, deployment |
+| [docs/qwen_checkpoints_and_druglike_report.md](docs/qwen_checkpoints_and_druglike_report.md) | Qwen checkpoint sweep + druglike set: runs, results, code status |
 | [docs/casf16_hypothesis.md](docs/casf16_hypothesis.md) | Hypothesis (H0/H1, metrics, predictions) |
 | [docs/casf16-core-hypothesis-assessment.md](docs/casf16-core-hypothesis-assessment.md) | Core 94-ligand results vs hypothesis |
 | [docs/bioactive_conformer_benchmark_analysis.md](docs/bioactive_conformer_benchmark_analysis.md) | Paper-style analysis notes and figure plan |

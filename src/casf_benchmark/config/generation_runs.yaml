@@ -1,0 +1,107 @@
+# Inference output directories per generation run, one entry per run label.
+#
+# Generator-agnostic by design: `label` is arbitrary text, so adding RDKit, loqi or
+# any other method is a new entry here plus its eval outputs -- not a script fork.
+# Only Qwen runs are listed so far.
+#
+# Each `cohorts` key names the directory that inference wrote under the
+# generation-results root (see CASF_GENERATION_RESULTS_ROOT in the batch scripts);
+# every such directory holds a `generation_results.pickle`. Runs evaluated on only
+# some cohorts simply omit the others.
+#
+# Optional per-entry descriptors -- `generator`, `display_label`, `model_size`,
+# `tokenizer`, `recipe`, `step` -- become the leading columns of
+# `extended_druglike_summary`. Qwen labels encode all of these already and are
+# parsed automatically (casf_benchmark.catalog.describe_run), so the entries below
+# set none; a generator whose label carries no such structure should set the ones
+# that mean something for it, e.g.
+#
+#   - label: rdkit_etkdg_druglike
+#     generator: RDKit
+#     display_label: "RDKit ETKDG"
+#     cohorts:
+#       druglike: <inference output dirname>
+#
+# Consumed by scripts/run_casf_batch_all.sh, scripts/run_druglike_eval_batch.sh and
+# scripts/build_druglike_covmat.py. List order is the order the batch scripts run in.
+
+runs:
+  # No `casf16_ref` cohort: its analysis aborts on one degenerate conformer
+  # (5csp_5csp_conf0, "atoms k and l have identical 3D coordinates") and so has no
+  # tables, so listing it here only makes run_casf_batch_all.sh fail the item on every
+  # rerun. Inference output for ref does exist, at
+  # 20260810_013739_qw600_pre_binned_uniform_revisited_finetuned_from_bigdata_step-29600-hf_casf16_ref_chembl
+  # -- restore the cohort key alongside the ref_root in casf_generation_families.yaml
+  # once the analysis can get past that ligand.
+  - label: qwen_0p6b_4e_from_bigdata_step29600
+    cohorts:
+      casf16_core: 20260809_232145_qw600_pre_binned_uniform_revisited_finetuned_from_bigdata_step-29600-hf_casf16_core_chembl
+      druglike: 20260901_142515_qw600_pre_binned_uniform_revisited_finetuned_from_bigdata_step-29600-hf_druglike
+
+  - label: qwen_1p7b_4e_step29600
+    cohorts:
+      casf16_core: 20260809_233612_qw1700_pre_binned_uniform_revisited_isomeric_step-29600-hf_casf16_core_chembl
+      casf16_ref: 20260810_015223_qw1700_pre_binned_uniform_revisited_isomeric_step-29600-hf_casf16_ref_chembl
+      druglike: 20260901_142835_qw1700_pre_binned_uniform_revisited_isomeric_step-29600-hf_druglike
+
+  - label: qwen_1p7b_bigdata_step74000
+    cohorts:
+      casf16_core: 20260809_234625_qw1700_pre_binned_uniform_bigdata_step-74000-hf_casf16_core_chembl
+      casf16_ref: 20260810_020923_qw1700_pre_binned_uniform_bigdata_step-74000-hf_casf16_ref_chembl
+      druglike: 20260901_143039_qw1700_pre_binned_uniform_bigdata_step-74000-hf_druglike
+
+  - label: qwen_1p7b_4e_from_bigdata_step26400
+    cohorts:
+      casf16_core: 20260809_235955_qwen1700_pre_binned_uniform_revisited_isomeric_4e_from_bigdata_step-26400-hf_casf16_core_chembl
+      casf16_ref: 20260810_045850_qwen1700_pre_binned_uniform_revisited_isomeric_4e_from_bigdata_step-26400-hf_casf16_ref_chembl
+      druglike: 20260901_143213_qwen1700_pre_binned_uniform_revisited_isomeric_4e_from_bigdata_step-26400-hf_druglike
+
+  - label: qwen_4b_4e_step20000
+    cohorts:
+      casf16_core: 20260810_000931_qwen4000_pre_binned_uniform_revisited_isomeric_step-20000-hf_casf16_core_chembl
+      casf16_ref: 20260810_050112_qwen4000_pre_binned_uniform_revisited_isomeric_step-20000-hf_casf16_ref_chembl
+      druglike: 20260901_143341_qwen4000_pre_binned_uniform_revisited_isomeric_step-20000-hf_druglike
+
+  - label: qwen_0p6b_fsq_6e_from_bigdata_step28320
+    cohorts:
+      casf16_core: 20260810_002314_qw600_fsq_bigdata_sft_step-28320-hf_casf16_core_chembl
+      casf16_ref: 20260810_050112_qw600_fsq_bigdata_sft_step-28320-hf_casf16_ref_chembl
+      druglike: 20260901_143425_qw600_fsq_bigdata_sft_step-28320-hf_druglike
+
+  - label: qwen_1p7b_fsq_6e_from_bigdata_step28320
+    cohorts:
+      casf16_core: 20260810_003955_qw1700_fsq_bigdata_sft_step-28320-hf_casf16_core_chembl
+      casf16_ref: 20260810_050112_qw1700_fsq_bigdata_sft_step-28320-hf_casf16_ref_chembl
+      druglike: 20260901_143441_qw1700_fsq_bigdata_sft_step-28320-hf_druglike
+
+  - label: qwen_4b_bigdata_step110000
+    cohorts:
+      casf16_core: 20260810_004257_qwen4000_pre_binned_uniform_bigdata_step-110000-hf_casf16_core_chembl
+      casf16_ref: 20260810_050112_qwen4000_pre_binned_uniform_bigdata_step-110000-hf_casf16_ref_chembl
+      druglike: 20260901_143547_qwen4000_pre_binned_uniform_bigdata_step-110000-hf_druglike
+
+  - label: qwen_4b_4e_from_bigdata_step20000
+    cohorts:
+      casf16_core: 20260810_005909_qw4000_revisited_isomeric_4e_from_bigdata_step-20000-hf_casf16_core_chembl
+      casf16_ref: 20260810_051011_qw4000_revisited_isomeric_4e_from_bigdata_step-20000-hf_casf16_ref_chembl
+      druglike: 20260901_144012_qw4000_revisited_isomeric_4e_from_bigdata_step-20000-hf_druglike
+
+  - label: qwen_0p6b_fsq_bigdata_step70534
+    cohorts:
+      casf16_core: 20260810_011712_qw600_fsq_bigdata_step-70534-hf_casf16_core_chembl
+      casf16_ref: 20260810_052956_qw600_fsq_bigdata_step-70534-hf_casf16_ref_chembl
+      druglike: 20260901_144350_qw600_fsq_bigdata_step-70534-hf_druglike
+
+  - label: qwen_1p7b_fsq_bigdata_step47023
+    cohorts:
+      casf16_core: 20260810_013234_qw1700_fsq_bigdata_step-47023-hf_casf16_core_chembl
+      casf16_ref: 20260810_054743_qw1700_fsq_bigdata_step-47023-hf_casf16_ref_chembl
+      druglike: 20260901_144405_qw1700_fsq_bigdata_step-47023-hf_druglike
+
+  - label: qwen_0p6b_bigdata_step111000
+    cohorts:
+      druglike: 20260901_144539_qwen600_pre_binned_uniform_bigdata_step-111000-hf_druglike
+
+  - label: qwen_0p6b_paired_step22000
+    cohorts:
+      druglike: 20260901_144618_qw600_pre_binned_paired_step-22000-hf_druglike

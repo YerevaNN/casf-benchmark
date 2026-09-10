@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from functools import lru_cache
 from pathlib import Path
@@ -9,7 +10,10 @@ from typing import Any
 
 import yaml
 
-from casf_benchmark.paths import DEFAULT_GENERATION_FAMILIES_CONFIG
+from casf_benchmark.paths import (
+    DEFAULT_GENERATION_FAMILIES_CONFIG,
+    DEFAULT_GENERATION_RUNS_CONFIG,
+)
 
 DEFAULT_CATALOG_PATH = DEFAULT_GENERATION_FAMILIES_CONFIG
 TIERS = ("fixed", "dynamic", "chembl_count")
@@ -87,6 +91,113 @@ def load_reference_config(catalog_path: Path = DEFAULT_CATALOG_PATH) -> dict[str
     if not isinstance(reference, dict):
         raise ValueError("CASF catalog reference section must be a mapping")
     return reference
+
+
+#: Descriptive fields a run entry may set explicitly, passed straight through to the
+#: druglike result tables. Any generator can supply the ones that mean something for
+#: it and omit the rest; nothing here is required.
+RUN_DESCRIPTOR_FIELDS = ("generator", "display_label", "model_size", "tokenizer", "recipe", "step")
+
+# Qwen checkpoint labels encode their own metadata, so the 12 bundled entries need no
+# explicit descriptors. Labels that do not match simply fall back to the generic
+# derivation in `describe_run`; they are not an error.
+_QWEN_LABEL_PATTERN = re.compile(r"^qwen_(0p6b|1p7b|4b)_(fsq_)?(.+?)_step(\d+)$")
+_QWEN_SIZE_NAMES = {"0p6b": "0.6B", "1p7b": "1.7B", "4b": "4B"}
+
+
+@dataclass(frozen=True)
+class GenerationRun:
+    """One generation run: a label, its per-cohort output dirs, and how to describe it."""
+
+    label: str
+    cohorts: dict[str, str]
+    descriptors: dict[str, object]
+
+
+@lru_cache(maxsize=8)
+def load_generation_run_entries(
+    config_path: Path = DEFAULT_GENERATION_RUNS_CONFIG,
+) -> tuple[GenerationRun, ...]:
+    """Return every entry in the generation-runs catalog, in config order.
+
+    The catalog is generator-agnostic: `label` is arbitrary text, so adding RDKit,
+    loqi or anything else is a new YAML entry plus its CSVs, not a script change.
+    """
+    with Path(config_path).open("r", encoding="utf-8") as handle:
+        data = yaml.safe_load(handle) or {}
+    if not isinstance(data, dict):
+        raise ValueError(f"Generation runs config must be a mapping: {config_path}")
+    entries = []
+    for raw in data.get("runs", []):
+        if not isinstance(raw, dict):
+            raise ValueError(f"Generation run entry must be a mapping: {raw!r}")
+        cohorts = raw.get("cohorts") or {}
+        if not isinstance(cohorts, dict):
+            raise ValueError(f"Generation run cohorts must be a mapping: {raw!r}")
+        entries.append(
+            GenerationRun(
+                label=str(raw["label"]),
+                cohorts={str(key): str(value) for key, value in cohorts.items() if value},
+                descriptors={
+                    field: raw[field] for field in RUN_DESCRIPTOR_FIELDS if raw.get(field) is not None
+                },
+            )
+        )
+    labels = [entry.label for entry in entries]
+    if len(labels) != len(set(labels)):
+        raise ValueError("Generation runs config has duplicate label(s)")
+    return tuple(entries)
+
+
+def load_generation_runs(
+    cohort: str, config_path: Path = DEFAULT_GENERATION_RUNS_CONFIG
+) -> tuple[tuple[str, str], ...]:
+    """Return ordered (run label, inference output dirname) pairs for `cohort`.
+
+    Runs that were not evaluated on `cohort` are omitted. Cohort names are the
+    `cohorts` keys in the config, e.g. `casf16_core`, `casf16_ref`, `druglike`.
+    """
+    runs = [
+        (entry.label, entry.cohorts[cohort])
+        for entry in load_generation_run_entries(config_path)
+        if cohort in entry.cohorts
+    ]
+    labels = [label for label, _ in runs]
+    if len(labels) != len(set(labels)):
+        raise ValueError(f"Generation runs config has duplicate label(s) for cohort {cohort!r}")
+    return tuple(runs)
+
+
+def describe_run(label: str, descriptors: dict[str, object] | None = None) -> dict[str, object]:
+    """Return the descriptive columns for one run label.
+
+    Explicit catalog descriptors win; otherwise Qwen checkpoint labels are parsed for
+    the size/tokenizer/recipe/step they encode. A label that is neither -- any other
+    generator -- still gets a usable `generator` and `display_label` and leaves the
+    Qwen-specific fields empty, so mixed methods share one table.
+    """
+    descriptors = descriptors or {}
+    match = _QWEN_LABEL_PATTERN.match(label)
+    if match:
+        derived: dict[str, object] = {
+            "generator": "Qwen",
+            "display_label": label,
+            "model_size": _QWEN_SIZE_NAMES.get(match.group(1), match.group(1)),
+            "tokenizer": "FSQ" if match.group(2) else "Binned",
+            "recipe": match.group(3).replace("_", " "),
+            "step": int(match.group(4)),
+        }
+    else:
+        derived = {
+            "generator": label.split("_", 1)[0],
+            "display_label": label,
+            "model_size": None,
+            "tokenizer": None,
+            "recipe": None,
+            "step": None,
+        }
+    derived.update(descriptors)
+    return derived
 
 
 def family_by_id(family_id: str, catalog_path: Path = DEFAULT_CATALOG_PATH) -> FamilySpec:
