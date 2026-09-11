@@ -9,8 +9,6 @@ dependencies = [
     "numpy>=2.0.0",
     "pandas>=2.0.0",
     "pyyaml>=6.0",
-    "posebusters>=0.4.0",
-    "matplotlib>=3.8.0",
 ]
 
 [project.optional-dependencies]
@@ -19,6 +17,8 @@ dashboard = [
 ]
 analysis = [
     "casf-benchmark[dashboard]",
+    "posebusters>=0.4.0",
+    "matplotlib>=3.8.0",
 ]
 dev = [
     "casf-benchmark[analysis]",
