@@ -430,6 +430,47 @@ TABLE_HEIGHT_PX = 520
 # `.part` file would corrupt it.
 _FETCH_LOCK = threading.Lock()
 
+# Kept in the Streamlit entrypoint so Community Cloud picks it up even when an
+# older editable install of casf-benchmark is still cached in the runtime image.
+_LEGACY_RELEASE_TAGS = frozenset({"dashboard-data-qwen-druglike"})
+_FORCED_RELEASE_TAG = "dashboard-data-druglike-ots-v1"
+
+
+def effective_release_tag() -> str:
+    tag = release_data.release_tag()
+    if tag in _LEGACY_RELEASE_TAGS:
+        return _FORCED_RELEASE_TAG
+    return tag
+
+
+def release_pin_path() -> Path:
+    return DEFAULT_DASHBOARD_DB.parent / ".dashboard_release_pin"
+
+
+def read_release_pin() -> str | None:
+    path = release_pin_path()
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8").strip()
+    return text or None
+
+
+def mark_release_assets_current() -> None:
+    if all(path.is_file() for path in release_data.RELEASE_ASSET_PATHS):
+        path = release_pin_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"{effective_release_tag()}\n", encoding="utf-8")
+
+
+def invalidate_stale_release_assets() -> None:
+    tag = effective_release_tag()
+    if read_release_pin() == tag:
+        return
+    for asset_path in release_data.RELEASE_ASSET_PATHS:
+        if asset_path.exists() and release_data.is_release_asset(asset_path):
+            asset_path.unlink()
+    release_pin_path().unlink(missing_ok=True)
+
 
 def ensure_db_available(path: Path) -> None:
     """Download a missing dashboard DB from the pinned GitHub Release.
@@ -443,10 +484,10 @@ def ensure_db_available(path: Path) -> None:
     if not release_data.is_release_asset(path):
         return
     if path.exists():
-        release_data.mark_release_assets_current()
+        mark_release_assets_current()
         return
 
-    tag = release_data.release_tag()
+    tag = effective_release_tag()
     status = st.empty()
     bar = st.progress(0.0)
 
@@ -461,10 +502,12 @@ def ensure_db_available(path: Path) -> None:
     try:
         with _FETCH_LOCK:
             # Another script thread may have completed the download while we waited.
-            if release_data.fetch_release_asset(path, progress=on_progress):
-                release_data.mark_release_assets_current()
+            if release_data.fetch_release_asset(
+                path, tag=tag, repo=release_data.release_repo(), progress=on_progress
+            ):
+                mark_release_assets_current()
             elif path.exists():
-                release_data.mark_release_assets_current()
+                mark_release_assets_current()
     except Exception as error:  # noqa: BLE001 - surfaced to the user, not swallowed
         st.error(
             f"Could not fetch {path.name} from release `{tag}` "
@@ -743,13 +786,13 @@ def main() -> None:
 
     db_default = Path(os.environ.get("CASF_DASHBOARD_DB", str(DEFAULT_DB)))
     db_path = Path(st.sidebar.text_input("Dashboard DB", str(db_default))).expanduser()
-    release_data.invalidate_stale_release_assets()
+    invalidate_stale_release_assets()
     ensure_db_available(db_path)
     ensure_db_available(DEFAULT_EXTENDED_DB)
     if not db_path.exists():
         st.error(f"Dashboard DB not found: {db_path}")
         st.stop()
-    st.sidebar.caption(f"Dashboard data release: `{release_data.release_tag()}`")
+    st.sidebar.caption(f"Dashboard data release: `{effective_release_tag()}`")
 
     db_mtime_ns = db_path.stat().st_mtime_ns
     table_names = load_table_names(str(db_path), db_mtime_ns)
