@@ -488,13 +488,14 @@ def load_table_names(db_path: str, db_mtime_ns: int) -> set[str]:
 
 def select_view(frame: pd.DataFrame, ligand_set: str, tier: str, family: str) -> pd.DataFrame:
     out = frame[frame["ligand_set"].astype(str) == ligand_set].copy()
-    if "view_tier" in out.columns:
-        out = out[out["view_tier"].astype(str) == tier]
-    else:
-        out = out[
-            ((out["row_type"].astype(str) == "generation") & (out["tier"].astype(str) == tier))
-            | (out["row_type"].astype(str) == "reference")
-        ]
+    if tier != "All":
+        if "view_tier" in out.columns:
+            out = out[out["view_tier"].astype(str) == tier]
+        else:
+            out = out[
+                ((out["row_type"].astype(str) == "generation") & (out["tier"].astype(str) == tier))
+                | (out["row_type"].astype(str) == "reference")
+            ]
     if family != "All":
         out = out[out["family"].astype(str) == family]
     return sort_rows(out)
@@ -745,7 +746,7 @@ def main() -> None:
 
     ligand_sets = sorted(comparison_rows["ligand_set"].dropna().astype(str).unique())
     ligand_set = st.sidebar.selectbox("Ligand set", ligand_sets, index=0 if "core" not in ligand_sets else ligand_sets.index("core"))
-    tier = st.sidebar.selectbox("Tier", ["fixed", "dynamic", "chembl_count"], index=0)
+    tier = st.sidebar.selectbox("Tier", ["All", *TIERS], index=0)
     families = ["All", *sorted(comparison_rows["family"].dropna().astype(str).unique())]
     family = st.sidebar.selectbox("Family", families)
 
