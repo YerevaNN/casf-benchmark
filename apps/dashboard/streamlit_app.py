@@ -718,13 +718,11 @@ def render_extended_analysis(db_path: Path, table_names: set[str]) -> None:
             key="extended_stratum_type",
         )
 
-    tabs = st.tabs(available)
-    for tab, label in zip(tabs, available):
-        spec = EXTENDED_TABLES[label]
-        with tab:
-            frame = load_table(str(extended_db_path), spec["table"], extended_mtime_ns)
-            view = filter_extended_table(frame, ligand_set, tier, family, stratum_type)
-            display_table(view, spec["columns"], spec["table"])
+    label = st.selectbox("Extended table", available, key="extended_table")
+    spec = EXTENDED_TABLES[label]
+    frame = load_table(str(extended_db_path), spec["table"], extended_mtime_ns)
+    view = filter_extended_table(frame, ligand_set, tier, family, stratum_type)
+    display_table(view, spec["columns"], spec["table"])
 
 
 def main() -> None:
@@ -760,7 +758,6 @@ def main() -> None:
         strata = comparison_strata[comparison_strata["breakdown"].astype(str) == breakdown]
         view = select_view(strata, ligand_set, tier, family)
 
-    tabs = st.tabs(["Overview", "Clustering", "Energy", "CASF hits", "CASF opt hits", "Funnel"])
     identity = [
         "stratum",
         "row_type",
@@ -771,10 +768,9 @@ def main() -> None:
         "ligands",
         "ligands_scope",
     ]
-
-    with tabs[0]:
-        display_table(
-            view,
+    main_views = {
+        "Overview": (
+            "overview",
             [
                 *identity,
                 "total_confs",
@@ -783,12 +779,9 @@ def main() -> None:
                 "pairwise_p90",
                 "mean_torsion_std_deg",
             ],
-            "overview",
-        )
-
-    with tabs[1]:
-        display_table(
-            view,
+        ),
+        "Clustering": (
+            "clustering",
             [
                 *identity,
                 "mean_clusters_0p5",
@@ -801,19 +794,13 @@ def main() -> None:
                 "largest_cluster_fraction_1p0",
                 "singleton_fraction_1p0",
             ],
-            "clustering",
-        )
-
-    with tabs[2]:
-        display_table(
-            view,
-            [*identity, "energy_min", "energy_max", "energy_median", "energy_std"],
+        ),
+        "Energy": (
             "energy",
-        )
-
-    with tabs[3]:
-        display_table(
-            view,
+            [*identity, "energy_min", "energy_max", "energy_median", "energy_std"],
+        ),
+        "CASF hits": (
+            "casf_hits",
             [
                 *identity,
                 "casf_best_rmsd",
@@ -823,12 +810,9 @@ def main() -> None:
                 "casf_hit_0p75",
                 "casf_hit_2p0",
             ],
-            "casf_hits",
-        )
-
-    with tabs[4]:
-        display_table(
-            view,
+        ),
+        "CASF opt hits": (
+            "casf_opt_hits",
             [
                 *identity,
                 "casf_opt_best_rmsd",
@@ -838,14 +822,9 @@ def main() -> None:
                 "casf_opt_hit_0p75",
                 "casf_opt_hit_2p0",
             ],
-            "casf_opt_hits",
-        )
-
-    with tabs[5]:
-        funnel = select_view(comparison_rows, ligand_set, tier, family)
-        funnel = funnel[funnel["row_type"].astype(str) == "generation"]
-        display_table(
-            funnel,
+        ),
+        "Funnel": (
+            "funnel",
             [
                 "row_type",
                 "display_label",
@@ -863,8 +842,15 @@ def main() -> None:
                 "pb_fail_rate_mean",
                 "kept_vs_target_rate_mean",
             ],
-            "funnel",
-        )
+        ),
+    }
+    table_label = st.radio("Table", list(main_views), horizontal=True, key="main_table")
+    table_name, table_columns = main_views[table_label]
+    table_frame = view
+    if table_name == "funnel":
+        table_frame = select_view(comparison_rows, ligand_set, tier, family)
+        table_frame = table_frame[table_frame["row_type"].astype(str) == "generation"]
+    display_table(table_frame, table_columns, table_name)
 
     render_extended_analysis(db_path, table_names)
 
