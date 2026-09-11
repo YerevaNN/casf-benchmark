@@ -105,3 +105,31 @@ runs:
   - label: qwen_0p6b_paired_step22000
     cohorts:
       druglike: 20260901_144618_qw600_pre_binned_paired_step-22000-hf_druglike
+
+  - label: loqi_druglike
+    generator: LOQI
+    display_label: "LOQI"
+    recipe: "upstream drugs checkpoint"
+    cohorts:
+      druglike: /mnt/weka/mbedrosian/codex_dir/druglike_off_the_shelf/gen_results/loqi_druglike
+
+  - label: nextmol_dmt_l_druglike
+    generator: NExT-Mol
+    display_label: "NExT-Mol DMT-L"
+    recipe: "upstream drugs DMT-L checkpoint"
+    cohorts:
+      druglike: /mnt/weka/mbedrosian/codex_dir/druglike_off_the_shelf/gen_results/nextmol_dmt_l_druglike
+
+  - label: torsional_diffusion_druglike
+    generator: Torsional Diffusion
+    display_label: "Torsional Diffusion"
+    recipe: "upstream GEOM-Drugs checkpoint"
+    cohorts:
+      druglike: /mnt/weka/mbedrosian/codex_dir/druglike_off_the_shelf/gen_results/torsional_diffusion_druglike
+
+  - label: mcf_drugs_l_druglike
+    generator: MCF
+    display_label: "MCF drugs-L"
+    recipe: "upstream drugs-L checkpoint"
+    cohorts:
+      druglike: /mnt/weka/mbedrosian/codex_dir/druglike_off_the_shelf/gen_results/mcf_drugs_l_druglike

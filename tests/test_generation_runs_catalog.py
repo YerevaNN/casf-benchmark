@@ -156,6 +156,8 @@ def test_describe_run_prefers_explicit_descriptors() -> None:
 
 def test_bundled_qwen_entries_all_describe_cleanly() -> None:
     for entry in load_generation_run_entries():
+        if not entry.label.startswith("qwen_"):
+            continue
         described = describe_run(entry.label, entry.descriptors)
         assert described["generator"] == "Qwen", entry.label
         assert described["model_size"], entry.label
