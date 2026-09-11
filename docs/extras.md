@@ -129,7 +129,7 @@ by the app, and is deliberately not fetchable.
 
 | Env | Default | Use |
 | --- | --- | --- |
-| `CASF_DASHBOARD_RELEASE` | `dashboard-data-qwen-druglike` | Pin the release tag, so republishing results is a new release plus an env change rather than a code change |
+| `CASF_DASHBOARD_RELEASE` | `dashboard-data-druglike-ots-v1` | Pin the release tag, so republishing results is a new release plus an env change rather than a code change |
 | `CASF_DASHBOARD_RELEASE_REPO` | `YerevaNN/casf-benchmark` | Where the assets live, when the app is served from a mirror |
 
 Set these under *Settings → Secrets* (or *Advanced settings* at deploy time). The

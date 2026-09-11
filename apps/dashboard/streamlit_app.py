@@ -440,7 +440,10 @@ def ensure_db_available(path: Path) -> None:
     what lets a fresh Streamlit Cloud clone, which has no DB at all, serve the
     dashboard. See `casf_benchmark.release_data` for the env pins.
     """
-    if path.exists() or not release_data.is_release_asset(path):
+    if not release_data.is_release_asset(path):
+        return
+    if path.exists():
+        release_data.mark_release_assets_current()
         return
 
     tag = release_data.release_tag()
@@ -458,7 +461,10 @@ def ensure_db_available(path: Path) -> None:
     try:
         with _FETCH_LOCK:
             # Another script thread may have completed the download while we waited.
-            release_data.fetch_release_asset(path, progress=on_progress)
+            if release_data.fetch_release_asset(path, progress=on_progress):
+                release_data.mark_release_assets_current()
+            elif path.exists():
+                release_data.mark_release_assets_current()
     except Exception as error:  # noqa: BLE001 - surfaced to the user, not swallowed
         st.error(
             f"Could not fetch {path.name} from release `{tag}` "
@@ -737,7 +743,9 @@ def main() -> None:
 
     db_default = Path(os.environ.get("CASF_DASHBOARD_DB", str(DEFAULT_DB)))
     db_path = Path(st.sidebar.text_input("Dashboard DB", str(db_default))).expanduser()
+    release_data.invalidate_stale_release_assets()
     ensure_db_available(db_path)
+    ensure_db_available(DEFAULT_EXTENDED_DB)
     if not db_path.exists():
         st.error(f"Dashboard DB not found: {db_path}")
         st.stop()

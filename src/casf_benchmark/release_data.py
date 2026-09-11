@@ -33,6 +33,10 @@ from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB
 DEFAULT_RELEASE_TAG = "dashboard-data-druglike-ots-v1"
 DEFAULT_RELEASE_REPO = "YerevaNN/casf-benchmark"
 
+#: Older Streamlit Cloud secrets may still pin a pre-OTS release. Ignore them so a
+#: code deploy can move Community Cloud forward without editing secrets in the UI.
+LEGACY_RELEASE_TAGS = frozenset({"dashboard-data-qwen-druglike"})
+
 #: The only paths this module will ever write. Keyed by location rather than by
 #: bare filename so that a DB the operator pointed us at elsewhere is never
 #: silently overwritten by release contents.
@@ -47,7 +51,53 @@ ProgressCallback = Callable[[int, int], None]
 
 def release_tag() -> str:
     """Release tag to fetch dashboard data from."""
-    return (os.environ.get("CASF_DASHBOARD_RELEASE") or "").strip() or DEFAULT_RELEASE_TAG
+    env = (os.environ.get("CASF_DASHBOARD_RELEASE") or "").strip()
+    if env in LEGACY_RELEASE_TAGS:
+        env = ""
+    return env or DEFAULT_RELEASE_TAG
+
+
+def release_pin_path() -> Path:
+    return DEFAULT_DASHBOARD_DB.parent / ".dashboard_release_pin"
+
+
+def read_release_pin() -> str | None:
+    path = release_pin_path()
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8").strip()
+    return text or None
+
+
+def write_release_pin(tag: str | None = None) -> None:
+    pin = tag or release_tag()
+    path = release_pin_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f"{pin}\n", encoding="utf-8")
+
+
+def invalidate_stale_release_assets() -> bool:
+    """Delete cached release DBs when the active tag changed.
+
+    Returns True when any default release asset was removed.
+    """
+    tag = release_tag()
+    if read_release_pin() == tag:
+        return False
+
+    removed = False
+    for path in RELEASE_ASSET_PATHS:
+        if path.exists() and is_release_asset(path):
+            path.unlink()
+            removed = True
+    release_pin_path().unlink(missing_ok=True)
+    return removed
+
+
+def mark_release_assets_current() -> None:
+    """Record the active release tag once all default assets are present."""
+    if all(path.is_file() for path in RELEASE_ASSET_PATHS):
+        write_release_pin()
 
 
 def release_repo() -> str:
