@@ -553,30 +553,36 @@ def _apply_table_view_controls(data: pd.DataFrame, cols: list[str], name: str) -
                 selected_methods = st.multiselect(
                     "Methods (rows)",
                     methods,
-                    default=methods,
+                    default=[],
                     key=f"{name}_methods",
+                    help="Leave empty to show every method.",
                 )
-                filtered = filtered[filtered["method"].astype(str).isin(selected_methods)]
+                if selected_methods:
+                    filtered = filtered[filtered["method"].astype(str).isin(selected_methods)]
         elif "display_label" in filtered.columns:
             labels = sorted(filtered["display_label"].dropna().astype(str).unique())
             if labels:
                 selected_labels = st.multiselect(
                     "Labels (rows)",
                     labels,
-                    default=labels,
+                    default=[],
                     key=f"{name}_display_labels",
+                    help="Leave empty to show every label.",
                 )
-                filtered = filtered[filtered["display_label"].astype(str).isin(selected_labels)]
+                if selected_labels:
+                    filtered = filtered[filtered["display_label"].astype(str).isin(selected_labels)]
 
         if "stratum" in filtered.columns and filtered["stratum"].nunique() > 1:
             strata = sorted(filtered["stratum"].dropna().astype(str).unique())
             selected_strata = st.multiselect(
                 "Strata (rows)",
                 strata,
-                default=strata,
+                default=[],
                 key=f"{name}_strata",
+                help="Leave empty to show every stratum.",
             )
-            filtered = filtered[filtered["stratum"].astype(str).isin(selected_strata)]
+            if selected_strata:
+                filtered = filtered[filtered["stratum"].astype(str).isin(selected_strata)]
 
         if "mol_id" in filtered.columns:
             mol_filter = st.text_input(
