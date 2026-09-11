@@ -1,0 +1,4 @@
+# Intentionally empty: result CSVs/SQLite are stored as normal Git blobs (not LFS
+# pointers). Declaring LFS filters here made Streamlit Community Cloud fail on
+# incremental "Pulling code changes" with exit status 1
+# ("files that should have been pointers, but weren't").

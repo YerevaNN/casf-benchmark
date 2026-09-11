@@ -1,5 +1,7 @@
-# Streamlit Community Cloud (and other hosts) — dashboard only
+# Streamlit Community Cloud (and other hosts) — dashboard only.
+# PoseBusters/RDKit stay in the analysis extra; Cloud cannot install them.
 streamlit>=1.42.0
 pandas>=2.0.0
 numpy>=2.0.0
+pyyaml>=6.0
 -e .

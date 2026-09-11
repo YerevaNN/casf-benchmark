@@ -60,6 +60,30 @@ def test_blank_env_falls_back_to_default(monkeypatch: pytest.MonkeyPatch) -> Non
     assert release_data.release_tag() == release_data.DEFAULT_RELEASE_TAG
 
 
+def test_legacy_release_tag_is_ignored(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("CASF_DASHBOARD_RELEASE", "dashboard-data-qwen-druglike")
+    assert release_data.release_tag() == release_data.DEFAULT_RELEASE_TAG
+
+
+def test_invalidate_stale_release_assets_deletes_cached_dbs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    dashboard = tmp_path / "casf_analysis_dashboard.sqlite"
+    extended = tmp_path / "extended_casf_analysis.sqlite"
+    dashboard.write_bytes(b"old")
+    extended.write_bytes(b"old")
+    pin = tmp_path / ".dashboard_release_pin"
+    pin.write_text("dashboard-data-qwen-druglike\n", encoding="utf-8")
+    monkeypatch.setattr(release_data, "RELEASE_ASSET_PATHS", (dashboard, extended))
+    monkeypatch.setattr(release_data, "DEFAULT_DASHBOARD_DB", dashboard)
+    monkeypatch.setattr(release_data, "release_pin_path", lambda: pin)
+
+    assert release_data.invalidate_stale_release_assets() is True
+    assert not dashboard.exists()
+    assert not extended.exists()
+    assert not pin.exists()
+
+
 def test_only_the_two_default_db_paths_are_release_assets() -> None:
     assert release_data.is_release_asset(DEFAULT_DASHBOARD_DB)
     assert release_data.is_release_asset(DEFAULT_EXTENDED_DB)

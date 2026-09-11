@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import sqlite3
 import threading
@@ -13,6 +14,20 @@ import streamlit as st
 
 from casf_benchmark import release_data
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB as _DEFAULT_EXTENDED_DB
+
+
+def _load_sibling_module(module_name: str):
+    """Load a .py sitting next to this Streamlit entrypoint (Cloud-safe)."""
+    path = Path(__file__).resolve().parent / f"{module_name}.py"
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Cannot load {module_name} from {path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+render_table_help = _load_sibling_module("table_help").render_table_help
 
 _DEFAULT_DB = DEFAULT_DASHBOARD_DB
 DEFAULT_DB = Path(os.environ.get("CASF_DASHBOARD_DB", str(_DEFAULT_DB)))
@@ -422,6 +437,47 @@ TABLE_HEIGHT_PX = 520
 # `.part` file would corrupt it.
 _FETCH_LOCK = threading.Lock()
 
+# Kept in the Streamlit entrypoint so Community Cloud picks it up even when an
+# older editable install of casf-benchmark is still cached in the runtime image.
+_LEGACY_RELEASE_TAGS = frozenset({"dashboard-data-qwen-druglike"})
+_FORCED_RELEASE_TAG = "dashboard-data-druglike-ots-v1"
+
+
+def effective_release_tag() -> str:
+    tag = release_data.release_tag()
+    if tag in _LEGACY_RELEASE_TAGS:
+        return _FORCED_RELEASE_TAG
+    return tag
+
+
+def release_pin_path() -> Path:
+    return DEFAULT_DASHBOARD_DB.parent / ".dashboard_release_pin"
+
+
+def read_release_pin() -> str | None:
+    path = release_pin_path()
+    if not path.is_file():
+        return None
+    text = path.read_text(encoding="utf-8").strip()
+    return text or None
+
+
+def mark_release_assets_current() -> None:
+    if all(path.is_file() for path in release_data.RELEASE_ASSET_PATHS):
+        path = release_pin_path()
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"{effective_release_tag()}\n", encoding="utf-8")
+
+
+def invalidate_stale_release_assets() -> None:
+    tag = effective_release_tag()
+    if read_release_pin() == tag:
+        return
+    for asset_path in release_data.RELEASE_ASSET_PATHS:
+        if asset_path.exists() and release_data.is_release_asset(asset_path):
+            asset_path.unlink()
+    release_pin_path().unlink(missing_ok=True)
+
 
 def ensure_db_available(path: Path) -> None:
     """Download a missing dashboard DB from the pinned GitHub Release.
@@ -432,10 +488,13 @@ def ensure_db_available(path: Path) -> None:
     what lets a fresh Streamlit Cloud clone, which has no DB at all, serve the
     dashboard. See `casf_benchmark.release_data` for the env pins.
     """
-    if path.exists() or not release_data.is_release_asset(path):
+    if not release_data.is_release_asset(path):
+        return
+    if path.exists():
+        mark_release_assets_current()
         return
 
-    tag = release_data.release_tag()
+    tag = effective_release_tag()
     status = st.empty()
     bar = st.progress(0.0)
 
@@ -450,7 +509,12 @@ def ensure_db_available(path: Path) -> None:
     try:
         with _FETCH_LOCK:
             # Another script thread may have completed the download while we waited.
-            release_data.fetch_release_asset(path, progress=on_progress)
+            if release_data.fetch_release_asset(
+                path, tag=tag, repo=release_data.release_repo(), progress=on_progress
+            ):
+                mark_release_assets_current()
+            elif path.exists():
+                mark_release_assets_current()
     except Exception as error:  # noqa: BLE001 - surfaced to the user, not swallowed
         st.error(
             f"Could not fetch {path.name} from release `{tag}` "
@@ -480,13 +544,14 @@ def load_table_names(db_path: str, db_mtime_ns: int) -> set[str]:
 
 def select_view(frame: pd.DataFrame, ligand_set: str, tier: str, family: str) -> pd.DataFrame:
     out = frame[frame["ligand_set"].astype(str) == ligand_set].copy()
-    if "view_tier" in out.columns:
-        out = out[out["view_tier"].astype(str) == tier]
-    else:
-        out = out[
-            ((out["row_type"].astype(str) == "generation") & (out["tier"].astype(str) == tier))
-            | (out["row_type"].astype(str) == "reference")
-        ]
+    if tier != "All":
+        if "view_tier" in out.columns:
+            out = out[out["view_tier"].astype(str) == tier]
+        else:
+            out = out[
+                ((out["row_type"].astype(str) == "generation") & (out["tier"].astype(str) == tier))
+                | (out["row_type"].astype(str) == "reference")
+            ]
     if family != "All":
         out = out[out["family"].astype(str) == family]
     return sort_rows(out)
@@ -559,30 +624,36 @@ def _apply_table_view_controls(data: pd.DataFrame, cols: list[str], name: str) -
                 selected_methods = st.multiselect(
                     "Methods (rows)",
                     methods,
-                    default=methods,
+                    default=[],
                     key=f"{name}_methods",
+                    help="Leave empty to show every method.",
                 )
-                filtered = filtered[filtered["method"].astype(str).isin(selected_methods)]
+                if selected_methods:
+                    filtered = filtered[filtered["method"].astype(str).isin(selected_methods)]
         elif "display_label" in filtered.columns:
             labels = sorted(filtered["display_label"].dropna().astype(str).unique())
             if labels:
                 selected_labels = st.multiselect(
                     "Labels (rows)",
                     labels,
-                    default=labels,
+                    default=[],
                     key=f"{name}_display_labels",
+                    help="Leave empty to show every label.",
                 )
-                filtered = filtered[filtered["display_label"].astype(str).isin(selected_labels)]
+                if selected_labels:
+                    filtered = filtered[filtered["display_label"].astype(str).isin(selected_labels)]
 
         if "stratum" in filtered.columns and filtered["stratum"].nunique() > 1:
             strata = sorted(filtered["stratum"].dropna().astype(str).unique())
             selected_strata = st.multiselect(
                 "Strata (rows)",
                 strata,
-                default=strata,
+                default=[],
                 key=f"{name}_strata",
+                help="Leave empty to show every stratum.",
             )
-            filtered = filtered[filtered["stratum"].astype(str).isin(selected_strata)]
+            if selected_strata:
+                filtered = filtered[filtered["stratum"].astype(str).isin(selected_strata)]
 
         if "mol_id" in filtered.columns:
             mol_filter = st.text_input(
@@ -628,6 +699,7 @@ def display_table(frame: pd.DataFrame, columns: list[str], name: str) -> None:
         file_name=f"{name}.csv",
         mime="text/csv",
     )
+    render_table_help(name)
 
 
 def filter_extended_table(
@@ -737,13 +809,11 @@ def render_extended_analysis(db_path: Path, table_names: set[str]) -> None:
             key="extended_stratum_type",
         )
 
-    tabs = st.tabs(available)
-    for tab, label in zip(tabs, available):
-        spec = EXTENDED_TABLES[label]
-        with tab:
-            frame = load_table(str(extended_db_path), spec["table"], extended_mtime_ns)
-            view = filter_extended_table(frame, ligand_set, tier, family, stratum_type)
-            display_table(view, spec["columns"], spec["table"])
+    label = st.selectbox("Extended table", available, key="extended_table")
+    spec = EXTENDED_TABLES[label]
+    frame = load_table(str(extended_db_path), spec["table"], extended_mtime_ns)
+    view = filter_extended_table(frame, ligand_set, tier, family, stratum_type)
+    display_table(view, spec["columns"], spec["table"])
 
 
 def main() -> None:
@@ -752,11 +822,13 @@ def main() -> None:
 
     db_default = Path(os.environ.get("CASF_DASHBOARD_DB", str(DEFAULT_DB)))
     db_path = Path(st.sidebar.text_input("Dashboard DB", str(db_default))).expanduser()
+    invalidate_stale_release_assets()
     ensure_db_available(db_path)
+    ensure_db_available(DEFAULT_EXTENDED_DB)
     if not db_path.exists():
         st.error(f"Dashboard DB not found: {db_path}")
         st.stop()
-    st.sidebar.caption(f"Dashboard data release: `{release_data.release_tag()}`")
+    st.sidebar.caption(f"Dashboard data release: `{effective_release_tag()}`")
 
     db_mtime_ns = db_path.stat().st_mtime_ns
     table_names = load_table_names(str(db_path), db_mtime_ns)
@@ -765,7 +837,7 @@ def main() -> None:
 
     ligand_sets = sorted(comparison_rows["ligand_set"].dropna().astype(str).unique())
     ligand_set = st.sidebar.selectbox("Ligand set", ligand_sets, index=0 if "core" not in ligand_sets else ligand_sets.index("core"))
-    tier = st.sidebar.selectbox("Tier", ["fixed", "dynamic", "chembl_count"], index=0)
+    tier = st.sidebar.selectbox("Tier", ["All", *TIERS], index=0)
     families = ["All", *sorted(comparison_rows["family"].dropna().astype(str).unique())]
     family = st.sidebar.selectbox("Family", families)
 
@@ -779,7 +851,6 @@ def main() -> None:
         strata = comparison_strata[comparison_strata["breakdown"].astype(str) == breakdown]
         view = select_view(strata, ligand_set, tier, family)
 
-    tabs = st.tabs(["Overview", "Clustering", "Energy", "CASF hits", "CASF opt hits", "Funnel"])
     identity = [
         "stratum",
         "row_type",
@@ -790,10 +861,9 @@ def main() -> None:
         "ligands",
         "ligands_scope",
     ]
-
-    with tabs[0]:
-        display_table(
-            view,
+    main_views = {
+        "Overview": (
+            "overview",
             [
                 *identity,
                 "total_confs",
@@ -802,13 +872,9 @@ def main() -> None:
                 "pairwise_p90",
                 "mean_torsion_std_deg",
             ],
-            "overview",
-        )
-        render_druglike_tables(db_path, table_names)
-
-    with tabs[1]:
-        display_table(
-            view,
+        ),
+        "Clustering": (
+            "clustering",
             [
                 *identity,
                 "mean_clusters_0p5",
@@ -821,19 +887,13 @@ def main() -> None:
                 "largest_cluster_fraction_1p0",
                 "singleton_fraction_1p0",
             ],
-            "clustering",
-        )
-
-    with tabs[2]:
-        display_table(
-            view,
-            [*identity, "energy_min", "energy_max", "energy_median", "energy_std"],
+        ),
+        "Energy": (
             "energy",
-        )
-
-    with tabs[3]:
-        display_table(
-            view,
+            [*identity, "energy_min", "energy_max", "energy_median", "energy_std"],
+        ),
+        "CASF hits": (
+            "casf_hits",
             [
                 *identity,
                 "casf_best_rmsd",
@@ -843,12 +903,9 @@ def main() -> None:
                 "casf_hit_0p75",
                 "casf_hit_2p0",
             ],
-            "casf_hits",
-        )
-
-    with tabs[4]:
-        display_table(
-            view,
+        ),
+        "CASF opt hits": (
+            "casf_opt_hits",
             [
                 *identity,
                 "casf_opt_best_rmsd",
@@ -858,14 +915,9 @@ def main() -> None:
                 "casf_opt_hit_0p75",
                 "casf_opt_hit_2p0",
             ],
-            "casf_opt_hits",
-        )
-
-    with tabs[5]:
-        funnel = select_view(comparison_rows, ligand_set, tier, family)
-        funnel = funnel[funnel["row_type"].astype(str) == "generation"]
-        display_table(
-            funnel,
+        ),
+        "Funnel": (
+            "funnel",
             [
                 "row_type",
                 "display_label",
@@ -883,8 +935,17 @@ def main() -> None:
                 "pb_fail_rate_mean",
                 "kept_vs_target_rate_mean",
             ],
-            "funnel",
-        )
+        ),
+    }
+    table_label = st.radio("Table", list(main_views), horizontal=True, key="main_table")
+    table_name, table_columns = main_views[table_label]
+    table_frame = view
+    if table_name == "funnel":
+        table_frame = select_view(comparison_rows, ligand_set, tier, family)
+        table_frame = table_frame[table_frame["row_type"].astype(str) == "generation"]
+    display_table(table_frame, table_columns, table_name)
+    if table_label == "Overview":
+        render_druglike_tables(db_path, table_names)
 
     render_extended_analysis(db_path, table_names)
 
