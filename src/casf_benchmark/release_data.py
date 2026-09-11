@@ -30,7 +30,7 @@ from typing import Callable
 
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB
 
-DEFAULT_RELEASE_TAG = "dashboard-data-qwen-druglike"
+DEFAULT_RELEASE_TAG = "dashboard-data-druglike-ots-v1"
 DEFAULT_RELEASE_REPO = "YerevaNN/casf-benchmark"
 
 #: The only paths this module will ever write. Keyed by location rather than by

@@ -25,37 +25,50 @@ def main() -> None:
     parser.add_argument(
         "--eval-dir",
         type=Path,
+        action="append",
         required=True,
-        help="Directory holding the *_summary.csv / *_per_molecule.csv written by "
-        "eval_druglike_conformers.py",
+        help="Directory holding *_summary.csv / *_per_molecule.csv. Repeat this "
+        "option to combine read-only or separately owned result roots.",
     )
     parser.add_argument("--db-path", type=Path, default=None, help="Default: {eval-dir}/druglike_eval.sqlite")
     args = parser.parse_args()
 
-    db_path = args.db_path or (args.eval_dir / "druglike_eval.sqlite")
+    eval_dirs = args.eval_dir
+    db_path = args.db_path or (eval_dirs[-1] / "druglike_eval.sqlite")
 
     summary_frames = [
-        pd.read_csv(f) for f in sorted(args.eval_dir.glob("*_summary.csv")) if not f.name.startswith("_")
+        pd.read_csv(f)
+        for eval_dir in eval_dirs
+        for f in sorted(eval_dir.glob("*_summary.csv"))
+        if not f.name.startswith("_")
     ]
 
     per_molecule_frames = []
-    for f in sorted(args.eval_dir.glob("*_per_molecule.csv")):
-        if f.name.startswith("_"):
-            continue
-        frame = pd.read_csv(f)
-        if "label" not in frame.columns:
-            # Older eval_druglike_conformers.py runs didn't stamp the checkpoint
-            # label onto each per-molecule row; recover it from the filename.
-            frame.insert(0, "label", f.name.removesuffix("_per_molecule.csv"))
-        per_molecule_frames.append(frame)
+    for eval_dir in eval_dirs:
+        for f in sorted(eval_dir.glob("*_per_molecule.csv")):
+            if f.name.startswith("_"):
+                continue
+            frame = pd.read_csv(f)
+            if "label" not in frame.columns:
+                # Older eval_druglike_conformers.py runs didn't stamp the checkpoint
+                # label onto each per-molecule row; recover it from the filename.
+                frame.insert(0, "label", f.name.removesuffix("_per_molecule.csv"))
+            per_molecule_frames.append(frame)
 
     if not summary_frames:
-        raise SystemExit(f"No *_summary.csv files found under {args.eval_dir}")
+        raise SystemExit(f"No *_summary.csv files found under {eval_dirs}")
 
-    summary_df = pd.concat(summary_frames, ignore_index=True).sort_values(
-        "overall_pb_pass_rate", ascending=False
+    summary_df = (
+        pd.concat(summary_frames, ignore_index=True)
+        .drop_duplicates(subset=["label"], keep="last")
+        .sort_values("overall_pb_pass_rate", ascending=False)
     )
-    per_molecule_df = pd.concat(per_molecule_frames, ignore_index=True) if per_molecule_frames else pd.DataFrame()
+    per_molecule_df = (
+        pd.concat(per_molecule_frames, ignore_index=True)
+        .drop_duplicates(subset=["label", "smiles"], keep="last")
+        if per_molecule_frames
+        else pd.DataFrame()
+    )
 
     con = sqlite3.connect(str(db_path))
     summary_df.to_sql("summary", con, if_exists="replace", index=False)
