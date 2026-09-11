@@ -30,12 +30,14 @@ from typing import Callable
 
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB
 
-DEFAULT_RELEASE_TAG = "dashboard-data-druglike-ots-v1"
+DEFAULT_RELEASE_TAG = "dashboard-data-druglike-ots-v2"
 DEFAULT_RELEASE_REPO = "YerevaNN/casf-benchmark"
 
 #: Older Streamlit Cloud secrets may still pin a pre-OTS release. Ignore them so a
 #: code deploy can move Community Cloud forward without editing secrets in the UI.
-LEGACY_RELEASE_TAGS = frozenset({"dashboard-data-qwen-druglike"})
+LEGACY_RELEASE_TAGS = frozenset(
+    {"dashboard-data-qwen-druglike", "dashboard-data-druglike-ots-v1"}
+)
 
 #: The only paths this module will ever write. Keyed by location rather than by
 #: bare filename so that a DB the operator pointed us at elsewhere is never
