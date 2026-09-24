@@ -192,6 +192,25 @@ def test_complete_detailed_plot_suite_includes_crystal_and_all_methods() -> None
     )
 
 
+def test_keep_best_qwen_uses_lowest_mean_best_rmsd() -> None:
+    charts = load_report_charts()
+    rows = report_rows()
+    extra = rows[rows["display_label"] == "Qwen model"].copy()
+    extra["display_label"] = "Qwen worse"
+    extra["casf_best_rmsd"] = 1.5
+    view = charts.filter_report_rows(
+        pd.concat([rows, extra], ignore_index=True),
+        ligand_set="core",
+        tier="fixed",
+        family="All",
+    )
+
+    assert charts.best_qwen_method(view) == "Qwen model"
+    kept = charts.keep_best_qwen(view, "Qwen model")
+    assert "Qwen worse" not in set(kept["plot_method"])
+    assert {"Qwen model", "Other model", "CASF crystal"} <= set(kept["plot_method"])
+
+
 def test_reference_report_order_and_delta_sort_are_preserved() -> None:
     charts = load_report_charts()
     methods = [

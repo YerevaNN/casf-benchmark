@@ -282,6 +282,38 @@ def _filter_methods(frame: pd.DataFrame, methods: Iterable[str]) -> pd.DataFrame
     return frame[frame["plot_method"].astype(str).isin(selected)].copy()
 
 
+def best_qwen_method(frame: pd.DataFrame) -> str | None:
+    """Qwen with the lowest mean best crystal RMSD in this view.
+
+    Pose recovery is the performance metric. Ties break toward a higher Hit@0.75,
+    then the method name.
+    """
+
+    if frame.empty or "plot_category" not in frame.columns:
+        return None
+    summary = aggregate_method_summary(frame)
+    qwen = summary[summary["category"].astype(str) == "Qwen"].dropna(
+        subset=["mean_best_rmsd"]
+    )
+    if qwen.empty:
+        return None
+    ranked = qwen.sort_values(
+        ["mean_best_rmsd", "hit_0p75", "method"],
+        ascending=[True, False, True],
+    )
+    return str(ranked.iloc[0]["method"])
+
+
+def keep_best_qwen(frame: pd.DataFrame, winner: str | None) -> pd.DataFrame:
+    """Drop every Qwen method except the best-performing one."""
+
+    if frame.empty or winner is None or "plot_category" not in frame.columns:
+        return frame
+    is_qwen = frame["plot_category"].astype(str) == "Qwen"
+    is_winner = frame["plot_method"].astype(str) == str(winner)
+    return frame[~is_qwen | is_winner].copy()
+
+
 def report_method_order(
     methods: Iterable[str],
     *,
@@ -422,12 +454,9 @@ def diversity_recovery_chart(summary: pd.DataFrame):
                 scale=alt.Scale(zero=False),
             ),
             color=alt.Color(
-                "category:N",
-                scale=alt.Scale(
-                    domain=list(CATEGORY_COLORS),
-                    range=list(CATEGORY_COLORS.values()),
-                ),
-                title="Method type",
+                "method:N",
+                title="Method",
+                legend=alt.Legend(title="Method", orient="right", labelLimit=280),
             ),
             size=alt.Size("n_best_rmsd:Q", title="Ligands"),
             tooltip=[
@@ -1065,6 +1094,14 @@ def render_report_analysis(
         st.info("No per-ligand rows match the active dashboard filters.")
         return
 
+    qwen_winner = best_qwen_method(frame)
+    frame = keep_best_qwen(frame, qwen_winner)
+    if qwen_winner is not None:
+        st.caption(
+            f"Qwen family graphs show only {qwen_winner}, "
+            "the lowest mean best crystal RMSD in this view."
+        )
+
     all_methods = report_method_order(
         frame["plot_method"].dropna().astype(str).unique()
     )
@@ -1085,7 +1122,7 @@ def render_report_analysis(
             "Generation methods",
             generation_methods,
             default=generation_methods,
-            key="report_analysis_methods",
+            key="report_analysis_methods_best_qwen",
             help="All matching generation methods are included by default.",
         )
         include_references = st.checkbox(
