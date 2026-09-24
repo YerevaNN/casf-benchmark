@@ -14,6 +14,7 @@ import streamlit as st
 import yaml
 
 from casf_benchmark.paths import DEFAULT_DASHBOARD_DB, DEFAULT_EXTENDED_DB as _DEFAULT_EXTENDED_DB
+from casf_benchmark.stratum_bins import STRATA, assign_stratum
 
 
 def _load_module_from_path(module_name: str, path: Path):
@@ -657,6 +658,46 @@ def load_table_names(db_path: str, db_mtime_ns: int) -> set[str]:
     return {str(row[0]) for row in rows}
 
 
+def attach_median_energy_std(
+    view: pd.DataFrame,
+    per_ligand: pd.DataFrame,
+    *,
+    ligand_set: str,
+    tier: str,
+    family: str,
+    breakdown: str,
+) -> pd.DataFrame:
+    """Add median-of-per-ligand energy std when the stored aggregate lacks it."""
+    if view.empty or "median_energy_std" in view.columns:
+        return view
+    if per_ligand.empty or "energy_std" not in per_ligand.columns:
+        return view
+    frame = per_ligand[per_ligand["ligand_set"].astype(str) == ligand_set].copy()
+    if family != "All" and "family" in frame.columns:
+        frame = frame[frame["family"].astype(str) == family]
+    if tier != "All" and "tier" in frame.columns and "row_type" in frame.columns:
+        frame = frame[
+            ((frame["row_type"].astype(str) == "generation") & (frame["tier"].astype(str) == tier))
+            | (frame["row_type"].astype(str) == "reference")
+        ]
+    group_cols = ["method"]
+    if breakdown != "total":
+        spec = STRATA.get(breakdown)
+        if spec is None or spec.column not in frame.columns or "stratum" not in view.columns:
+            return view
+        frame["stratum"] = assign_stratum(frame[spec.column], breakdown).astype(str)
+        group_cols.append("stratum")
+    if "row_type" in frame.columns and "row_type" in view.columns:
+        group_cols.append("row_type")
+    frame["_energy_std"] = pd.to_numeric(frame["energy_std"], errors="coerce")
+    medians = (
+        frame.groupby(group_cols, dropna=False)["_energy_std"]
+        .median()
+        .reset_index(name="median_energy_std")
+    )
+    return view.merge(medians, on=group_cols, how="left")
+
+
 def select_view(frame: pd.DataFrame, ligand_set: str, tier: str, family: str) -> pd.DataFrame:
     out = frame[frame["ligand_set"].astype(str) == ligand_set].copy()
     if tier != "All":
@@ -1057,7 +1098,14 @@ def main() -> None:
         ),
         "Energy": (
             "energy",
-            [*identity, "energy_min", "energy_max", "energy_median", "energy_std"],
+            [
+                *identity,
+                "energy_min",
+                "energy_max",
+                "energy_median",
+                "energy_std",
+                "median_energy_std",
+            ],
         ),
         "CASF hits": (
             "casf_hits",
@@ -1107,6 +1155,15 @@ def main() -> None:
     table_label = st.radio("Table", list(main_views), horizontal=True, key="main_table")
     table_name, table_columns = main_views[table_label]
     table_frame = view
+    if table_name == "energy":
+        table_frame = attach_median_energy_std(
+            table_frame,
+            per_ligand,
+            ligand_set=ligand_set,
+            tier=tier,
+            family=family,
+            breakdown=breakdown,
+        )
     if table_name == "funnel":
         table_frame = select_view(comparison_rows, ligand_set, tier, family)
         table_frame = table_frame[table_frame["row_type"].astype(str) == "generation"]

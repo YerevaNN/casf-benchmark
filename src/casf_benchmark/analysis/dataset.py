@@ -15,6 +15,7 @@ from pandas.errors import EmptyDataError
 from casf_benchmark.analysis.metrics import (
     CASF_GEOMETRIC_CLUSTER_THRESHOLDS,
     safe_mean,
+    safe_median,
     safe_sum,
     threshold_tag,
 )
@@ -415,6 +416,12 @@ def _mean_column(frame: pd.DataFrame, column: str) -> float:
     return safe_mean(pd.to_numeric(frame[column], errors="coerce").tolist())
 
 
+def _median_column(frame: pd.DataFrame, column: str) -> float:
+    if column not in frame.columns:
+        return math.nan
+    return safe_median(pd.to_numeric(frame[column], errors="coerce").tolist())
+
+
 def _sum_column(frame: pd.DataFrame, column: str) -> float:
     if column not in frame.columns:
         return math.nan
@@ -507,6 +514,7 @@ def build_comparison_master(global_long: pd.DataFrame) -> pd.DataFrame:
             "casf_opt_median_rmsd",
         ):
             row[column] = _mean_column(frame, column)
+        row["median_energy_std"] = _median_column(frame, "energy_std")
         for threshold in CASF_GEOMETRIC_CLUSTER_THRESHOLDS:
             tag = threshold_tag(threshold)
             cluster_col = f"greedy_clusters_{tag}"

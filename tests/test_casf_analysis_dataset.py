@@ -129,6 +129,23 @@ def test_build_master_from_per_ligand_long(tmp_path):
     assert row["selected_pool_total"] == 20.0
 
 
+def test_comparison_master_median_energy_std_is_not_the_mean():
+    rows = [
+        gen_row("lig_a", "loqi_raw_fixed", "core", 2, 18),
+        gen_row("lig_b", "loqi_raw_fixed", "core", 7, 25),
+        gen_row("lig_c", "loqi_raw_fixed", "core", 12, 35),
+    ]
+    rows[0]["energy_std"] = 1.0
+    rows[1]["energy_std"] = 2.0
+    rows[2]["energy_std"] = 100.0
+
+    master = build_comparison_master(pd.DataFrame(rows))
+
+    row = master.iloc[0]
+    assert abs(float(row["energy_std"]) - (103.0 / 3.0)) < 1e-9
+    assert float(row["median_energy_std"]) == 2.0
+
+
 def test_build_master_frame_keeps_reference_rows_separate(tmp_path):
     gen_root = tmp_path / "loqi_core"
     ref_root = tmp_path / "reference_core"

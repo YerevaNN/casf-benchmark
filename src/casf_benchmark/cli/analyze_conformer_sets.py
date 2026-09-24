@@ -1614,6 +1614,7 @@ def build_energy_summary(energy_df: pd.DataFrame) -> pd.DataFrame:
         values = pd.to_numeric(frame["energy"], errors="coerce").dropna().to_numpy(dtype=float)
         if values.size == 0:
             continue
+        per_ligand_std = frame.groupby("mol_id")["energy"].std(ddof=0).to_numpy(dtype=float).tolist()
         rows.append(
             {
                 "source": source,
@@ -1634,9 +1635,8 @@ def build_energy_summary(energy_df: pd.DataFrame) -> pd.DataFrame:
                 "energy_median": safe_mean(
                     frame.groupby("mol_id")["energy"].median().to_numpy(dtype=float).tolist()
                 ),
-                "energy_std": safe_mean(
-                    frame.groupby("mol_id")["energy"].std(ddof=0).to_numpy(dtype=float).tolist()
-                ),
+                "energy_std": safe_mean(per_ligand_std),
+                "median_energy_std": safe_median(per_ligand_std),
             }
         )
     return add_ligands_scope_column(sort_and_finalize_table(pd.DataFrame(rows)), confs_col="total_confs")
@@ -1645,15 +1645,24 @@ def build_energy_summary(energy_df: pd.DataFrame) -> pd.DataFrame:
 def build_energy_summary_from_long(metrics_df: pd.DataFrame) -> pd.DataFrame:
     metrics_df = attach_identity_columns(metrics_df)
     cols = ["energy_min", "energy_max", "energy_median", "energy_std"]
+    group_cols = ["source", "family", "tier", "variant", "method", "display_label", "row_type"]
     energy_sources = metrics_df[metrics_df["source"].map(is_compare_source)].copy()
-    return add_ligands_scope_column(
-        sort_and_finalize_table(
-            aggregate_numeric(
-                energy_sources,
-                ["source", "family", "tier", "variant", "method", "display_label", "row_type"],
-                cols,
+    summary = aggregate_numeric(energy_sources, group_cols, cols)
+    if not summary.empty:
+        medians = []
+        for keys, frame in energy_sources.groupby(group_cols, sort=False):
+            if not isinstance(keys, tuple):
+                keys = (keys,)
+            row = {col: value for col, value in zip(group_cols, keys)}
+            row["median_energy_std"] = (
+                safe_median(pd.to_numeric(frame["energy_std"], errors="coerce").tolist())
+                if "energy_std" in frame.columns
+                else math.nan
             )
-        ),
+            medians.append(row)
+        summary = summary.merge(pd.DataFrame(medians), on=group_cols, how="left")
+    return add_ligands_scope_column(
+        sort_and_finalize_table(summary),
         confs_col="total_confs",
     )
 
@@ -1798,6 +1807,7 @@ COLUMN_DOCS: dict[str, str] = {
     "energy_max": "Mean per-ligand maximum PB-passing MMFF94s energy, averaged across ligands.",
     "energy_median": "Mean per-ligand median PB-passing MMFF94s energy, averaged across ligands.",
     "energy_std": "Mean per-ligand energy standard deviation, averaged across ligands.",
+    "median_energy_std": "Median of per-ligand energy standard deviations. Typical ligand spread; less sensitive to outlier molecules than energy_std.",
 }
 
 
@@ -2007,6 +2017,7 @@ def write_report(
                 "energy_max",
                 "energy_median",
                 "energy_std",
+                "median_energy_std",
             ],
             intro="Energies for generation methods and `chembl3d_gt_pb` use PoseBusters-passing conformers. `chembl3d_gt` uses all loaded ChEMBL3D conformers.",
         )

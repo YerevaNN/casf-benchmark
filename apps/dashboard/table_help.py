@@ -55,7 +55,8 @@ TABLE_HELP: dict[str, dict[str, str | dict[str, str]]] = {
         "summary": (
             "MMFF94s energy spread of evaluated conformers (secondary to geometry; "
             "not \"lower is better\"). Per ligand: min/max/median/std of finite "
-            "MMFF94s energies; cohort = mean of those. Generation / chembl3d_gt_pb "
+            "MMFF94s energies. Cohort min/max/median/std are means of those; "
+            "`median_energy_std` is the median of per-ligand stds. Generation / chembl3d_gt_pb "
             "use PB-kept sets; chembl3d_gt uses the full ChEMBL3D ensemble."
         ),
         "columns": {
@@ -66,6 +67,7 @@ TABLE_HELP: dict[str, dict[str, str | dict[str, str]]] = {
             "energy_max": "Mean of per-ligand maximum MMFF94s energy.",
             "energy_median": "Mean of per-ligand median MMFF94s energy.",
             "energy_std": "Mean per-ligand energy std — high ⇒ multi-basin; low + few clusters ⇒ collapse.",
+            "median_energy_std": "Median of per-ligand energy std — typical ligand spread, less pulled by outlier molecules.",
         },
     },
     "casf_hits": {
