@@ -29,10 +29,11 @@ def test_stale_release_pin_follows_the_current_dashboard_release(monkeypatch) ->
         "dashboard-data-casf-dedup-core-v1",
         "dashboard-data-v2-binned-pm12-v1",
         "dashboard-data-casf-dedup-ref-v1",
+        "dashboard-data-ref-dedup-v1",
         "latest",
     ):
         monkeypatch.setattr(dashboard.release_data, "release_tag", lambda tag=tag: tag)
-        assert dashboard.effective_release_tag() == "dashboard-data-ref-dedup-v1"
+        assert dashboard.effective_release_tag() == "dashboard-data-v2-1p7b-binned-pm12-v1"
 
 
 def test_ligand_set_selector_order_and_labels() -> None:
@@ -104,6 +105,7 @@ def test_public_qwen_family_ids_and_labels_match_requested_shortlist() -> None:
         "qwen_4b_revisited": "Qwen 4B revisited",
         "qwen_0p6b_casf_dedup_binned_pm12_step64000": "Qwen 0.6B CASF-dedup binned pm12 (step 64000)",
         "qwen_0p6b_v2_binned_pm12_step66057": "v2 binned pm12",
+        "qwen_1p7b_v2_binned_pm12_step66057": "v2 1.7B binned pm12",
         "qwen_0p6b_v2_fsq_step41054": "qwen v2 0.6 fsq",
     }
     assert dashboard.QWEN_DASHBOARD_LABELS == expected

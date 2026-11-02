@@ -87,6 +87,7 @@ QWEN_DASHBOARD_LABELS = {
     "qwen_4b_revisited": "Qwen 4B revisited",
     "qwen_0p6b_casf_dedup_binned_pm12_step64000": "Qwen 0.6B CASF-dedup binned pm12 (step 64000)",
     "qwen_0p6b_v2_binned_pm12_step66057": "v2 binned pm12",
+    "qwen_1p7b_v2_binned_pm12_step66057": "v2 1.7B binned pm12",
     "qwen_0p6b_v2_fsq_step41054": "qwen v2 0.6 fsq",
 }
 BREAKDOWN_LABELS = {
@@ -460,9 +461,10 @@ _LEGACY_RELEASE_TAGS = frozenset(
         "dashboard-data-casf-dedup-core-v1",
         "dashboard-data-v2-binned-pm12-v1",
         "dashboard-data-casf-dedup-ref-v1",
+        "dashboard-data-ref-dedup-v1",
     }
 )
-_FORCED_RELEASE_TAG = "dashboard-data-ref-dedup-v1"
+_FORCED_RELEASE_TAG = "dashboard-data-v2-1p7b-binned-pm12-v1"
 
 
 def effective_release_tag() -> str:

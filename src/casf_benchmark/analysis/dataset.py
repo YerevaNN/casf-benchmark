@@ -377,11 +377,12 @@ def load_source_long(source: AnalysisSource) -> pd.DataFrame:
         out.insert(0, "run_id", source.run_id)
     if "run_label" not in out.columns:
         out.insert(1, "run_label", source.label)
+    # The source config decides the cohort. An analyzer can stamp a directory
+    # `ref` when the rows are a derived subset, as with the 1,044-ligand selection.
     if "ligand_set" not in out.columns:
         out.insert(2, "ligand_set", source.ligand_set)
     else:
-        values = out["ligand_set"].astype("string")
-        out["ligand_set"] = values.mask(values.isna() | (values == ""), source.ligand_set)
+        out["ligand_set"] = source.ligand_set
     out["_source_mtime"] = path.stat().st_mtime if path.exists() else 0.0
     return out
 

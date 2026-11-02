@@ -118,6 +118,18 @@ runs:
       casf16_ref: qwen_0p6b_v2_binned_pm12_step66057_ref
       druglike: qwen_0p6b_v2_binned_pm12_step66057_plinder
 
+  - label: qwen_1p7b_v2_binned_pm12_step66057
+    generator: Qwen
+    display_label: "v2 1.7B binned pm12"
+    model_size: 1.7B
+    tokenizer: "legacy binned pm12"
+    recipe: "BigData legacy-v2 binned PM12 pretraining; CASF-ref-dedup-v1 evaluation"
+    step: 66057
+    cohorts:
+      casf16_core: qwen_1p7b_v2_binned_pm12_step66057_core
+      casf16_ref: qwen_1p7b_v2_binned_pm12_step66057_ref
+      druglike: qwen_1p7b_v2_binned_pm12_step66057_plinder
+
   - label: qwen_0p6b_v2_fsq_step41054
     generator: Qwen
     display_label: "qwen v2 0.6 fsq"

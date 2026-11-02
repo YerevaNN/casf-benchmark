@@ -374,6 +374,20 @@ def test_public_ref_rows_derive_the_same_selected_universe():
     assert set(generation["ligands"]) == {1044}
 
 
+def test_configured_ligand_set_overrides_an_analyzer_stamp(tmp_path: Path) -> None:
+    root = tmp_path / "run"
+    write_csv(
+        root / "analysis" / "tables" / "geometric_per_ligand_long.csv",
+        [gen_row("lig_a", "demo_fixed", "ref", 1, 5)],
+    )
+    config = tmp_path / "sources.yaml"
+    write_config(config, [("demo_ref", "demo", "ref_dedup", root)])
+
+    loaded = build_global_per_ligand_long(config, output_csv=None)
+
+    assert set(loaded["ligand_set"].astype(str)) == {"ref_dedup"}
+
+
 def test_assign_stratum_preserves_series_index():
     values = pd.Series([2, 7], index=[100, 200])
 
