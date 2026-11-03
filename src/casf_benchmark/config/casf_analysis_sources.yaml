@@ -201,6 +201,18 @@ sources:
     ligand_set: ref_dedup
     root: data/results/runs/qwen_1p7b_v2_binned_pm12_step66057_ref
 
+  - run_id: qwen_1p7b_v2_coordtoken_step41054_core
+    label: "v2 1.7B CoordToken (core)"
+    ligand_set: core
+    root: data/results/runs/qwen_1p7b_v2_coordtoken_step41054_core
+
+  # The analyzer stamped these 1,044 rows ligand_set=ref. They are the frozen
+  # casf-ref-dedup-v1 selection, so the bundled table is stored as ref_dedup.
+  - run_id: qwen_1p7b_v2_coordtoken_step41054_ref
+    label: "v2 1.7B CoordToken (ref dedup)"
+    ligand_set: ref_dedup
+    root: data/results/runs/qwen_1p7b_v2_coordtoken_step41054_ref
+
   - run_id: qwen_0p6b_v2_fsq_step41054_core
     label: "qwen v2 0.6 fsq (core)"
     ligand_set: core

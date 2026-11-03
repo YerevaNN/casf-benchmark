@@ -187,6 +187,19 @@ def test_v2_1p7b_binned_pm12_covers_every_public_cohort_with_requested_name() ->
     assert described["step"] == 66057
 
 
+def test_v2_1p7b_coordtoken_covers_every_public_cohort_with_requested_name() -> None:
+    entry = next(
+        entry
+        for entry in load_generation_run_entries()
+        if entry.label == "qwen_1p7b_v2_coordtoken_step41054"
+    )
+    assert set(entry.cohorts) == {"casf16_core", "casf16_ref", "druglike"}
+    described = describe_run(entry.label, entry.descriptors)
+    assert described["display_label"] == "v2 1.7B CoordToken"
+    assert described["model_size"] == "1.7B"
+    assert described["step"] == 41054
+
+
 def test_v2_fsq_covers_every_public_cohort_with_requested_name() -> None:
     entry = next(
         entry
@@ -243,6 +256,7 @@ def test_pr1_qwen_families_are_hidden_on_core_only() -> None:
         "qwen_0p6b_casf_dedup_binned_pm12_step64000",
         "qwen_0p6b_v2_binned_pm12_step66057",
         "qwen_1p7b_v2_binned_pm12_step66057",
+        "qwen_1p7b_v2_coordtoken_step41054",
         "qwen_0p6b_v2_fsq_step41054",
     }
     step_named = {family.id for family in load_families() if "_step" in family.id}
@@ -250,6 +264,7 @@ def test_pr1_qwen_families_are_hidden_on_core_only() -> None:
     assert not is_hidden_on_core("qwen_0p6b_casf_dedup_binned_pm12_step64000", "core")
     assert not is_hidden_on_core("qwen_0p6b_v2_binned_pm12_step66057", "core")
     assert not is_hidden_on_core("qwen_1p7b_v2_binned_pm12_step66057", "core")
+    assert not is_hidden_on_core("qwen_1p7b_v2_coordtoken_step41054", "core")
     assert not is_hidden_on_core("qwen_0p6b_v2_fsq_step41054", "core")
     assert "qwen_0p6b_fsq_bigdata_pretrain" not in hidden
     assert "qwen_0p6b_fsq_bigdata_step70534" in hidden

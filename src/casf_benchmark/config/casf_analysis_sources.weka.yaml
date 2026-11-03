@@ -205,6 +205,17 @@ sources:
     ligand_set: ref_dedup
     root: /mnt/weka/mbedrosian/pharma_generation_analysis/v2_1p7b_binned_pm12_step66057/casf_benchmark_runs/qwen_1p7b_v2_binned_pm12_step66057_ref
 
+  - run_id: qwen_1p7b_v2_coordtoken_step41054_core
+    label: "v2 1.7B CoordToken (core)"
+    ligand_set: core
+    root: /mnt/weka/mbedrosian/pharma_generation_analysis/v2_1p7b_coordtoken_step41054/casf_benchmark_runs/qwen_1p7b_v2_coordtoken_step41054_core
+
+  # Generated on the 1,044 selected crystals, not the 1,236-entry ref intersection.
+  - run_id: qwen_1p7b_v2_coordtoken_step41054_ref
+    label: "v2 1.7B CoordToken (ref dedup)"
+    ligand_set: ref_dedup
+    root: /mnt/weka/mbedrosian/pharma_generation_analysis/v2_1p7b_coordtoken_step41054/casf_benchmark_runs/qwen_1p7b_v2_coordtoken_step41054_ref
+
   - run_id: qwen_0p6b_v2_fsq_step41054_core
     label: "qwen v2 0.6 fsq (core)"
     ligand_set: core

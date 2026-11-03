@@ -82,6 +82,7 @@ def test_a_formerly_pinned_default_now_falls_back_to_latest(monkeypatch: pytest.
         "dashboard-data-v2-binned-pm12-v1",
         "dashboard-data-casf-dedup-ref-v1",
         "dashboard-data-ref-dedup-v1",
+        "dashboard-data-v2-1p7b-binned-pm12-v1",
     ):
         monkeypatch.setenv("CASF_DASHBOARD_RELEASE", tag)
         assert release_data.release_tag() == release_data.LATEST_TAG

@@ -64,6 +64,7 @@ LEGACY_RELEASE_TAGS = frozenset(
         "dashboard-data-v2-binned-pm12-v1",
         "dashboard-data-casf-dedup-ref-v1",
         "dashboard-data-ref-dedup-v1",
+        "dashboard-data-v2-1p7b-binned-pm12-v1",
     }
 )
 
