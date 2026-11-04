@@ -31,10 +31,11 @@ def test_stale_release_pin_follows_the_current_dashboard_release(monkeypatch) ->
         "dashboard-data-casf-dedup-ref-v1",
         "dashboard-data-ref-dedup-v1",
         "dashboard-data-v2-1p7b-binned-pm12-v1",
+        "dashboard-data-v2-1p7b-coordtoken-v1",
         "latest",
     ):
         monkeypatch.setattr(dashboard.release_data, "release_tag", lambda tag=tag: tag)
-        assert dashboard.effective_release_tag() == "dashboard-data-v2-1p7b-coordtoken-v1"
+        assert dashboard.effective_release_tag() == "dashboard-data-independent-torsion-v1"
 
 
 def test_ligand_set_selector_order_and_labels() -> None:

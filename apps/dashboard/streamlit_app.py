@@ -464,9 +464,10 @@ _LEGACY_RELEASE_TAGS = frozenset(
         "dashboard-data-casf-dedup-ref-v1",
         "dashboard-data-ref-dedup-v1",
         "dashboard-data-v2-1p7b-binned-pm12-v1",
+        "dashboard-data-v2-1p7b-coordtoken-v1",
     }
 )
-_FORCED_RELEASE_TAG = "dashboard-data-v2-1p7b-coordtoken-v1"
+_FORCED_RELEASE_TAG = "dashboard-data-independent-torsion-v1"
 
 
 def effective_release_tag() -> str:
