@@ -37,8 +37,8 @@ RECIPE = {
         "+/-120 deg, DG clash 0.7; no experimental coordinates"
     ),
     "torsion_minimized_22_druglike": (
-        "MMFF94s of each independent raw conformer, one-to-one, status 0 or 1; "
-        "scored on PLINDER-22"
+        "fresh torsion sample from the same ETKDGv3 seed, MMFF94s, DG clash 0.7 "
+        "before and after, 1000 survivors"
     ),
 }
 PLINDER_FILES = {
