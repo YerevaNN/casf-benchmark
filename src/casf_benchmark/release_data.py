@@ -66,6 +66,7 @@ LEGACY_RELEASE_TAGS = frozenset(
         "dashboard-data-ref-dedup-v1",
         "dashboard-data-v2-1p7b-binned-pm12-v1",
         "dashboard-data-v2-1p7b-coordtoken-v1",
+        "dashboard-data-independent-torsion-v1",
     }
 )
 

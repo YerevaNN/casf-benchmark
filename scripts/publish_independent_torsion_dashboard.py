@@ -33,7 +33,7 @@ DISPLAY = {
 }
 RECIPE = {
     "torsion_raw_druglike": (
-        "five ETKDGv3 seeds from isomeric SMILES, 200 x 5 accepted conformers, "
+        "one ETKDGv3 seed from isomeric SMILES, 1000 accepted conformers, "
         "+/-120 deg, DG clash 0.7; no experimental coordinates"
     ),
     "torsion_minimized_22_druglike": (
