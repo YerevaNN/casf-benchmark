@@ -54,6 +54,28 @@ def test_merge_parts_preserves_druglike_order(tmp_path: Path, monkeypatch) -> No
     assert merged["CO"] == ["b", "c"]
 
 
+def test_merge_parts_prefers_complete_shards_in_shard_order(tmp_path: Path, monkeypatch) -> None:
+    inference = load_script("run_off_the_shelf_druglike")
+    monkeypatch.setattr(inference, "normalize_conformers", lambda mols: mols)
+    druglike = tmp_path / "druglike.pickle"
+    with druglike.open("wb") as handle:
+        pickle.dump(OrderedDict([("CC", {})]), handle)
+
+    stale = inference.part_path(tmp_path / "run", 0)
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    with stale.open("wb") as handle:
+        pickle.dump(OrderedDict([("CC", ["stale"])]), handle)
+    for shard_index, conformers in enumerate((["a", "b"], ["c"])):
+        path = inference.shard_part_path(tmp_path / "run", 0, shard_index, 2)
+        with path.open("wb") as handle:
+            pickle.dump(OrderedDict([("CC", conformers)]), handle)
+
+    destination = inference.merge_parts(druglike, tmp_path / "run")
+    with destination.open("rb") as handle:
+        merged = pickle.load(handle)
+    assert merged["CC"] == ["a", "b", "c"]
+
+
 def test_covmat_metrics_have_expected_recall_and_precision() -> None:
     covmat = load_script("eval_druglike_covmat")
     metrics = covmat.per_molecule_metrics(

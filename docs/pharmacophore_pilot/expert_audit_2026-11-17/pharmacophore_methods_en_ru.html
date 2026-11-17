@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Plain-language methods for pharmacophore query extraction and conformer matching, in English and Russian.">
+  <title>Pharmacophore queries: methods explained</title>
+  <style>
+    :root { color-scheme: light; --ink: #1f2d3d; --muted: #526476; --line: #d9e2e9; --accent: #155b80; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #f3f5f7; color: var(--ink); font: 17px/1.65 system-ui, -apple-system, "Segoe UI", sans-serif; }
+    .document { max-width: 1020px; margin: 28px auto; background: white; border: 1px solid var(--line); border-radius: 12px; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 38px; border-bottom: 1px solid var(--line); }
+    .language-label { color: var(--muted); font-size: 14px; }
+    .language-switch { display: flex; gap: 6px; }
+    .language-switch label { cursor: pointer; border: 1px solid var(--line); border-radius: 7px; padding: 8px 16px; min-height: 44px; font-size: 15px; }
+    .language-input { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+    #language-en:checked ~ .toolbar label[for="language-en"],
+    #language-ru:checked ~ .toolbar label[for="language-ru"] { background: var(--accent); color: white; border-color: var(--accent); }
+    #language-en:focus-visible ~ .toolbar label[for="language-en"],
+    #language-ru:focus-visible ~ .toolbar label[for="language-ru"] { outline: 3px solid #df9b30; outline-offset: 3px; }
+    #language-en:checked ~ main > [lang="ru"],
+    #language-ru:checked ~ main > [lang="en"] { display: none; }
+    main { padding: 32px 48px 46px; }
+    h1 { font-size: clamp(27px, 4vw, 36px); line-height: 1.2; margin: 6px 0 14px; letter-spacing: -.025em; }
+    h2 { font-size: 23px; line-height: 1.3; margin: 36px 0 14px; padding-top: 22px; border-top: 1px solid var(--line); }
+    h3 { font-size: 18px; line-height: 1.4; margin: 22px 0 10px; }
+    p { margin: 12px 0; }
+    .subtitle { color: var(--muted); font-size: 18px; }
+    .meta, .small { color: var(--muted); font-size: 14px; }
+    strong { font-weight: 650; }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    ul, ol { padding-left: 24px; }
+    li { margin: 9px 0; }
+    .terms { border-left: 3px solid var(--line); padding-left: 16px; }
+    .table-wrap { overflow-x: auto; margin: 18px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 15px; line-height: 1.5; }
+    th, td { text-align: left; vertical-align: top; padding: 10px 12px; border: 1px solid var(--line); }
+    th { background: #eef3f7; font-weight: 650; }
+    .note { padding: 15px 18px; border-left: 4px solid var(--accent); background: #f0f6fa; margin: 20px 0; }
+    .warning { border-left-color: #a86a15; background: #fff7e9; }
+    .note > :first-child { margin-top: 0; }
+    .note > :last-child { margin-bottom: 0; }
+    details { margin: 18px 0; padding: 13px 17px; border: 1px solid var(--line); border-radius: 7px; background: #fcfdfe; font-size: 15px; }
+    summary { cursor: pointer; color: var(--accent); font-weight: 600; }
+    details[open] summary { margin-bottom: 12px; }
+    code, pre { font: 13px/1.55 ui-monospace, "SFMono-Regular", Consolas, monospace; overflow-wrap: anywhere; }
+    code { background: #edf2f6; padding: 1px 4px; border-radius: 3px; }
+    pre { white-space: pre-wrap; background: #edf2f6; padding: 13px; border-radius: 5px; }
+    .footer { border-top: 1px solid var(--line); margin-top: 30px; padding-top: 16px; }
+    @media (max-width: 640px) {
+      body { font-size: 16px; }
+      .document { margin: 0; border: 0; border-radius: 0; }
+      .toolbar { padding: 14px 20px; }
+      main { padding: 22px 20px 32px; }
+      th, td { padding: 8px; }
+      .table-wrap table { min-width: 490px; }
+    }
+    @media print {
+      body { background: white; font-size: 10pt; }
+      .document { max-width: none; border: 0; margin: 0; }
+      .toolbar { display: none; }
+      main { padding: 0; }
+      h1 { font-size: 22pt; } h2 { font-size: 15pt; break-after: avoid; } h3, summary { break-after: avoid; }
+      table { font-size: 9pt; } thead { display: table-header-group; } tr { break-inside: avoid; }
+      .table-wrap { overflow: visible; } .table-wrap table { min-width: 0; }
+      details { background: white; } .note { break-inside: avoid; }
+      @page { size: A4; margin: 17mm; }
+    }
+  </style>
+</head>
+<body>
+<div class="document">
+  <input class="language-input" type="radio" name="language" id="language-en" value="en" aria-controls="document-en" checked>
+  <input class="language-input" type="radio" name="language" id="language-ru" value="ru" aria-controls="document-ru">
+  <header class="toolbar">
+    <span class="language-label">Language / Язык</span>
+    <div class="language-switch">
+      <label for="language-en" lang="en">English</label>
+      <label for="language-ru" lang="ru">Русский</label>
+    </div>
+  </header>
+  <main>
+    <article id="document-en" lang="en" data-title="Pharmacophore queries: methods explained">
+      <header>
+        <h1>Pharmacophore queries: methods explained</h1>
+        <p class="subtitle">How we selected experimental structures, built queries, and tested generated conformers.</p>
+        <p class="meta">PLINDER22 and ATC48 · 17 November 2026</p>
+        <p>We ask whether generated conformers can reproduce the spatial arrangement of chemical features observed in experimental protein–ligand structures. This tests geometric coverage, not binding affinity or the performance of a model trained on the dataset.</p>
+        <p class="terms"><strong>Conformer:</strong> a 3D geometry of a molecule. <strong>Experimental pose:</strong> the ligand’s geometry, position, and orientation in a deposited structure. <strong>Pharmacophore query:</strong> a set of chemical feature types and their 3D positions.</p>
+        <p class="small">The main text explains the method. Expand “Technical details” for exact settings. This document changes the wording only, not the experiment or its results.</p>
+      </header>
+
+      <section>
+        <h2>1. Which molecules and structures did we use?</h2>
+        <p>PLINDER22 is the existing set of 22 molecules and their audited experimental references. ATC48 adds 48 molecules selected from an existing local PLINDER-derived table.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Dataset</th><th>Molecules</th><th>Reference ligand instances</th><th>Usable queries</th></tr></thead>
+          <tbody><tr><td>PLINDER22</td><td>22</td><td>1,067</td><td>932, covering all 22 molecules</td></tr>
+          <tr><td>ATC48</td><td>48</td><td>379</td><td>311, covering 44 molecules</td></tr></tbody>
+        </table></div>
+        <h3>Where ATC48 came from</h3>
+        <p>The local source table contained 63 molecules. We removed 14 that overlapped the original ligand shortlist and one boron-containing molecule, vaborbactam. All remaining 48 were kept. Selection did not depend on generator performance.</p>
+        <p>For each molecule, we selected up to eight accepted references from different PDB entries in a reproducible order. We downloaded the actual ligand instance from each experimental complex, not the idealized ligand geometry in the PDB Chemical Component Dictionary (CCD).</p>
+        <p><strong>Important limitation:</strong> the source table contains ATC-related names and DrugBank synonyms, but no explicit ATC codes or DrugBank IDs. The original annotation script and database snapshot are missing. ATC48 is an internal extension enriched for molecules frequently found in PDB, not an official PLINDER split or an ATC-balanced benchmark.</p>
+        <details><summary>Technical details: ATC48 selection and exclusions</summary>
+          <p>Source: <code>/mnt/weka/hrant/plinder_frequency/2024-06-v2/druglike_atc_candidates.tsv</code>. An archived note describes selection from 270 frequent PLINDER molecules, each found in at least ten distinct PDB entries, using RCSB CCD and DrugBank-derived ATC annotations. All 63 saved rows meet that frequency threshold.</p>
+          <p>The 14 overlaps were identified using full source InChIKeys. Allowed elements were C, N, O, F, P, S, Cl, Br, I. There was no balancing by ATC class or target, and no scaffold separation.</p>
+          <ol>
+            <li>Find ligand instances using <code>ligands_per_system.parquet</code> from PLINDER <code>2024-06/v2</code>.</li>
+            <li>Order rows by the SHA-256 hash of <code>plinder-atc48-v1|inchikey|pdb_id|system_id|ligand_id</code>. Select one indexed instance per molecule/PDB pair before checking validity.</li>
+            <li>Keep the first eight accepted references from distinct PDB entries. If an instance fails, move to the next PDB entry rather than trying other copies in the same entry.</li>
+            <li>Require a readable ligand with one conformer and the expected molecular structure, including stereochemistry. Exclude covalent connections recorded in mmCIF <code>_struct_conn</code>.</li>
+          </ol>
+          <pre>https://models.rcsb.org/v1/{pdb_id}/ligand?label_asym_id={ligand_asym}&amp;encoding=sdf
+https://files.rcsb.org/download/{PDB_ID}.cif.gz</pre>
+          <p>Of 457 retrieval attempts, 379 were accepted, 68 had molecular-identity or stereochemical-representation mismatches, and ten had covalent annotations. There are eight references for 46 molecules, seven for LPA, and four for YY3.</p>
+          <p>OIN had an unspecified stereocenter in the source. The first accepted experimental reference supplied its configuration; we then used that structure for later references and generation. The other 47 molecules match the source isomeric SMILES exactly. The stereo check uses RDKit’s SDF identity check; it is not a separate check that removes stereo labels and reassigns them from 3D coordinates.</p>
+          <p>Query construction excluded 133 PLINDER22 references with fewer than four centers and two covalent complexes. For ATC48, 65 had fewer than four centers and three lacked suitable protein chains. CAM, OIN, DLU, and LPA have no usable query.</p>
+          <p>The PLINDER index is historical; the RCSB files were downloaded later and may differ from the 2024 archive. Saved file hashes identify the coordinates actually used.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>2. Where did the ligand and protein coordinates come from?</h2>
+        <p><strong>Both come from the experimental structure.</strong> We did not predict the protein from the ligand, dock the ligand, or energy-minimize its heavy atoms.</p>
+        <p>We read the original ligand SDF and the corresponding protein mmCIF file. Using Gemmi, we reconstruct the biological assembly specified in the structure record, then identify the ligand copy whose coordinates match the original SDF.</p>
+        <p>We keep protein-containing chains within 6 Å of the ligand and export their polypeptide heavy atoms. Waters, metals, cofactors, and nucleic acids are not used to build the query. Pharmit then limits the receptor region to a box around the ligand, with 10 Å padding.</p>
+        <p>The protein is used to build the reference query. Conformer generation and final matching do not use protein inputs.</p>
+        <details><summary>Technical details: coordinate checks and protein preparation</summary>
+          <ul>
+            <li>The cleaned reference and original ligand must agree after rigid alignment, with heavy-atom RMSD ≤ 0.001 Å. Up to 10,000 atom mappings are tested, accounting for stereochemistry; reflections are not allowed.</li>
+            <li>The biological assembly is built from the first structural model.</li>
+            <li>To identify the ligand copy, atoms are matched by element directly in the original coordinate frame, without superposition. Required RMSD: ≤ 0.01 Å. An ambiguous best-copy tie within 10<sup>−6</sup> Å is rejected.</li>
+            <li>The 6 Å rule selects whole chains, not individual pocket residues. In a mixed chain, non-protein atoms may affect the minimum distance, but only polypeptide heavy atoms are exported.</li>
+            <li>Alternative atom locations (altloc) are chosen by highest occupancy for each atom name. Ties use a blank label first, then alphabetical order. This does not guarantee one consistent alternative conformation for the entire residue.</li>
+            <li>PDB export uses 0.001 Å coordinate precision. The Pharmit box is aligned with the coordinate axes and padded by 10 Å.</li>
+            <li>Waters, metals, cofactors, and nucleic acids are recorded but excluded. There is no explicit pH/protonation-state assignment, tautomer enumeration, or repair of missing residues.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section>
+        <h2>3. Which pharmacophore features are selected?</h2>
+        <p>Pharmit/Open Babel identifies standard pharmacophore features: hydrogen-bond donors and acceptors, ionizable groups, aromatic rings, and hydrophobic groups. Each feature has a type and a 3D center; the center may represent a group rather than a single atom.</p>
+        <p>We keep ligand features that satisfy Pharmit’s protein-contact rules below. These are geometric rules, not proof that an interaction is present.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Ligand feature</th><th>Compatible protein feature</th><th>Maximum distance between centers</th><th>Minimum number of protein features</th></tr></thead>
+          <tbody>
+            <tr><td>Hydrogen-bond donor / acceptor</td><td>Acceptor / donor</td><td>4 Å</td><td>1</td></tr>
+            <tr><td>Positive / negative ionizable group</td><td>Negative / positive ionizable group</td><td>5 Å</td><td>1</td></tr>
+            <tr><td>Aromatic</td><td>Pharmit’s protein Aromatic class, including cationic groups for cation–π contacts</td><td>5 Å</td><td>1</td></tr>
+            <tr><td>Hydrophobic</td><td>Hydrophobic</td><td>6 Å</td><td>3</td></tr>
+          </tbody>
+        </table></div>
+        <p>For a hydrophobic feature, “three” means three protein feature points, not necessarily three residues. Hydrogen-bond angles and interaction energies are not checked.</p>
+        <details><summary>Technical details: feature definitions and clustering</summary>
+          <p>These rules come from Pharmit, not from thresholds newly fitted for this study. We use commit <code>49d2c0a573f6e58bca62f674b33874bdd42c2274</code>, with unchanged feature definitions. Distance limits are inclusive (≤).</p>
+          <p>The software labels are <code>HydrogenDonor</code>, <code>HydrogenAcceptor</code>, <code>PositiveIon</code>, <code>NegativeIon</code>, <code>Aromatic</code>, and <code>Hydrophobic</code>. SMARTS patterns define the chemical groups. Ionizable-group definitions can include formally neutral groups, so these labels do not establish experimental protonation states.</p>
+          <p>Pharmit clusters nearby feature points using 2 Å for hydrophobic features and 0.1 Å for other types. As a result, the number and positions of hydrophobic features can change between conformers. Exact SMARTS patterns and protein-specific definitions are in the audit package’s <code>pharmarec.cpp</code>.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>4. How is a query built?</h2>
+        <p>Each selected experimental ligand instance produces at most one query. <strong>We keep all selected contact features and require all of them to match.</strong> We do not choose a random subset, pick features by hand, or change the query for different generators.</p>
+        <p>A query must have at least four distinct feature centers that are not all on one line. This is a minimum requirement, not a rule to select exactly four features. Extra features on a generated conformer are allowed.</p>
+        <p>The main matching tolerance is 0.5 Å per feature. This is a strict evaluation choice, not an established biological optimum. We also test 0.75 Å and 1.0 Å using the same queries. These tolerances are separate from the 4–6 Å protein-contact distances used to select features.</p>
+        <p>We compare feature types and positions only. Donor/acceptor directions and aromatic-ring orientations are not constrained.</p>
+        <details><summary>Technical details: query settings and validation</summary>
+          <pre>pharmit --cmd pharma --in raw_ligand.sdf --receptor native_receptor.pdb --out query.json</pre>
+          <ul>
+            <li>All enabled ligand features passing the contact rules are retained, marked required, and given no directional constraint.</li>
+            <li>At least four distinct centers are required. Centers are counted sequentially using a minimum separation of 0.1 Å. This count does not merge or delete the typed query points.</li>
+            <li>The largest triangle formed by the centers must have area ≥ 0.1 Å². Four non-coplanar centers are not required.</li>
+            <li>Covalent complexes are excluded using deposited or archived annotations.</li>
+            <li>The query must match its original experimental ligand. It must also do so after the query is rotated by 0.613 radians about y and translated by (11, −4.5, 2.25) Å.</li>
+          </ul>
+          <p>All retained queries passed these checks. The checks use a modified Pharmit indexed-search implementation, not the final matching algorithm described next. They test basic behavior; they do not prove that every possible match will be found.</p>
+          <p>Query inclusion was fixed without looking at generator matches. The numerical thresholds were not independently calibrated for biological relevance.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>5. How are generated conformers matched?</h2>
+        <p>We compare a query only with generated conformers of the same expected molecule. Pharmit identifies the conformer’s features <strong>without a protein</strong>.</p>
+        <ol>
+          <li>Assign each query feature to a conformer feature of the same type. A conformer feature cannot be used twice.</li>
+          <li>For each possible assignment, rotate and translate the whole conformer using least-squares alignment, calculated with the Kabsch algorithm.</li>
+          <li>Count a match if every assigned feature is within the chosen tolerance after alignment. Stop after the first passing assignment.</li>
+        </ol>
+        <p><strong>The conformer’s internal geometry does not change.</strong> There are no rotations around bonds, energy minimization, or docking. Matching uses distances between feature centers, not whole-molecule atom RMSD. It does not test protein clashes or binding affinity.</p>
+        <div class="note warning">
+          <p><strong>Known limitation: some matches may be missed.</strong> Least-squares alignment minimizes the sum of squared distances, not the largest individual distance. It can leave one feature outside the tolerance even when a slightly different rotation or translation would put every feature inside.</p>
+          <p>A positive match has a valid alignment. A negative result does not always mean that no valid alignment exists. We reproduced this issue with a synthetic example, but its effect on the molecular results and method rankings is unknown. The algorithm has not been changed for this report.</p>
+        </div>
+        <details><summary>Technical details: preprocessing, search, and the known limitation</summary>
+          <p>Preprocessing operates on a copy: remove explicit hydrogens and reorder heavy atoms to match the reference SMILES. Atom mapping first accounts for chirality, then falls back to connectivity only. This fallback does not correct stereochemistry or trigger replacement generation. Source coordinates remain unchanged; SDF export has finite precision. Each conformer keeps its own feature set.</p>
+          <p>The search enumerates all one-to-one feature assignments consistent with type labels, without reusing a candidate point. Different feature types may share coordinates. Assignments are pruned when corresponding pair distances differ by more than 2r + 2ε, where ε = 0.0002 Å. Each complete assignment uses an unweighted Kabsch fit with rotation determinant +1; reflections are not allowed. Every feature distance must be ≤ r + ε.</p>
+          <p>Feature sizes, directions, excluded volumes, protein clashes, energy scores, and atom RMSD thresholds do not enter this test. The final search does not use Pharmit’s triplet index; that index is used in the separate validation checks.</p>
+          <p>In the synthetic example, r = 0.5 Å. Four differently typed query points are at (−5,−5,0), (5,−5,0), (−5,5,0), (5,5,0). In the candidate, the first x coordinate is −4.1. A translation of (−0.45,0,0) gives a 0.45 Å error at every point, but the Kabsch fit has a maximum error of about 0.5701 Å and is rejected. The audit package’s <code>matching_limitation_check.py</code> reproduces this result.</p>
+          <p>The choice is to report the explicit criterion “within tolerance after least-squares alignment,” or validate a method that tests whether any rigid alignment can satisfy all feature tolerances and then recalculate matches.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>6. What does PoseBusters check?</h2>
+        <p>In the main analysis, a conformer must both match the query and pass the ligand-only PoseBusters checks. PoseBusters receives the expected molecular structure, but no protein. It checks chemical identity, stereochemistry, and internal geometry, including bond lengths, angles, clashes within the molecule, planarity, and an energy-ratio test.</p>
+        <p><strong>We do not keep generating until 1,000 conformers pass PoseBusters.</strong> A failed conformer still counts toward the generation budget and is not replaced.</p>
+        <p>The energy test compares the candidate with an internal set of minimized reference conformers. It does not minimize or repair the stored candidate’s heavy-atom geometry.</p>
+        <details><summary>Technical details: PoseBusters configuration and reference quality</summary>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Setting</th><th>Value or behavior</th></tr></thead>
+            <tbody>
+              <tr><td>Version</td><td>PoseBusters 0.6.5 with a custom configuration, not a standard preset.</td></tr>
+              <tr><td>Pass condition</td><td>All returned Boolean checks must pass. Saved results aligned with the candidate order are reused.</td></tr>
+              <tr><td>Chemistry</td><td>Loading, RDKit sanity checks, InChI conversion, connectivity, radicals, formula, bonds, tetrahedral and double-bond stereochemistry; InChI option <code>w</code>.</td></tr>
+              <tr><td>Distance geometry</td><td>Bond/angle tolerance parameters: 0.25; clash parameter: 0.3; hydrogens ignored. RDKit <code>set15bounds</code>, <code>scaleVDW</code>, and triangle smoothing on; <code>macrocycle14</code> off. These are relative tolerance settings, not all distances in Å.</td></tr>
+              <tr><td>Planarity</td><td>Aromatic five- and six-membered sp² rings and configured trigonal-planar C=C systems: maximum deviation from the plane 0.25 Å.</td></tr>
+              <tr><td>Energy ratio</td><td>Candidate UFF energy divided by the mean energy of 50 ETKDGv3-generated, UFF-minimized reference conformers; threshold 100; internal random seed 42; one energy thread per worker.</td></tr>
+              <tr><td>Coordinates</td><td>Loading cleanup, hydrogen addition, and stereo reassignment are off. The energy module separately adds and relaxes missing hydrogens on a copy, with original atoms fixed. Stored heavy atoms are not repaired.</td></tr>
+              <tr><td>Errors</td><td>Failed batches are split recursively to identify the problem candidate. A candidate that still causes an error when checked alone is invalid. No replacement generation follows.</td></tr>
+            </tbody>
+          </table></div>
+          <p>The experimental references did not all receive the same quality filter. PLINDER22 retains 18 usable queries with archived geometry warnings; ATC48 experimental references were not screened with PoseBusters. “Not screened” is not the same as “failed.”</p>
+          <p>Minimum mapped ligand-atom occupancy is below one for 67 PLINDER22 and 35 ATC48 usable queries. The current PLINDER PoseBusters rerun differs from the earlier original-Qwen result by one passing candidate; the cause is unresolved.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>7. What needs expert review?</h2>
+        <ol>
+          <li><strong>Matching:</strong> Is the least-squares definition acceptable, or must the algorithm find any alignment that satisfies the tolerance? Assess missed matches and possible changes to rankings.</li>
+          <li><strong>Features and contacts:</strong> Review Pharmit’s distances, the three-feature hydrophobic rule, cation–π handling, ionizable-group definitions, and the lack of direction constraints.</li>
+          <li><strong>Chemical preparation:</strong> Decide whether to standardize protonation states and tautomers, and whether OIN and stereochemistry need independent checks from 3D coordinates.</li>
+          <li><strong>Protein preparation:</strong> Review first-model selection, alternative atom locations, whole-chain selection, and the exclusion of waters, metals, cofactors, and nucleic acids.</li>
+          <li><strong>Query settings:</strong> Review the requirement for all features to match, the minimum of four centers, and the main 0.5 Å tolerance. Decide whether to add a separately reported analysis allowing partial matches.</li>
+          <li><strong>Reference quality:</strong> Decide whether to apply the same quality checks to all experimental references, or report results separately by geometry quality, occupancy, covalent status, and structure resolution.</li>
+          <li><strong>ATC48 source:</strong> Recover the annotation script/database version and explicit ATC/DrugBank identifiers. Review the frequency-based selection, element restrictions, PDB-instance selection, and lack of class or scaffold balancing.</li>
+        </ol>
+      </section>
+      <p class="footer small">This is a simpler explanation of the existing methods audit. The original reports, parameter tables, and supporting evidence are unchanged. Both languages are included in this file; no internet connection is needed to switch languages.</p>
+    </article>
+
+    <article id="document-ru" lang="ru" data-title="Фармакофорные запросы: простое описание метода">
+      <header>
+        <h1>Фармакофорные запросы: простое описание метода</h1>
+        <p class="subtitle">Как мы выбирали экспериментальные структуры, строили запросы и проверяли сгенерированные конформеры.</p>
+        <p class="meta">PLINDER22 и ATC48 · 17 ноября 2026</p>
+        <p>Мы проверяем, могут ли сгенерированные конформеры воспроизвести пространственное расположение химических признаков из экспериментальных структур комплексов белок–лиганд. Это оценка геометрического покрытия, а не аффинности связывания или качества модели, обученной на таком наборе данных.</p>
+        <p class="terms"><strong>Конформер:</strong> трёхмерная геометрия молекулы. <strong>Экспериментальная поза:</strong> геометрия, положение и ориентация лиганда в опубликованной структуре. <strong>Фармакофорный запрос:</strong> набор типов химических признаков и их трёхмерных координат.</p>
+        <p class="small">Основной текст объясняет метод. Точные настройки находятся в раскрывающихся разделах «Технические детали». В этом документе изменено только изложение, но не эксперимент и его результаты.</p>
+      </header>
+
+      <section>
+        <h2>1. Какие молекулы и структуры мы использовали?</h2>
+        <p>PLINDER22 — существующий набор из 22 молекул с проверенными экспериментальными референсными структурами. ATC48 добавляет 48 молекул из существующей локальной таблицы, полученной на основе PLINDER.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Набор</th><th>Молекулы</th><th>Референсные экземпляры лигандов</th><th>Подходящие запросы</th></tr></thead>
+          <tbody><tr><td>PLINDER22</td><td>22</td><td>1 067</td><td>932, для всех 22 молекул</td></tr>
+          <tr><td>ATC48</td><td>48</td><td>379</td><td>311, для 44 молекул</td></tr></tbody>
+        </table></div>
+        <h3>Откуда взялся ATC48</h3>
+        <p>В исходной локальной таблице было 63 молекулы. Мы исключили 14, уже входивших в исходный список лигандов, и одну борсодержащую молекулу — ваборбактам. Все оставшиеся 48 были сохранены. Отбор не зависел от результатов генераторов.</p>
+        <p>Для каждой молекулы мы выбрали до восьми подходящих референсных структур из разных записей PDB в воспроизводимом порядке. Из каждого экспериментального комплекса загружался конкретный экземпляр лиганда, а не его идеализированная геометрия из словаря химических компонентов PDB (CCD).</p>
+        <p><strong>Важное ограничение:</strong> исходная таблица содержит названия, связанные с ATC, и синонимы из DrugBank, но не явные коды ATC или идентификаторы DrugBank. Исходный скрипт аннотирования и снимок базы данных отсутствуют. Внутренний дополнительный набор ATC48 состоит из молекул, часто встречающихся в PDB; это не официальная выборка PLINDER и не сбалансированный по ATC тестовый набор.</p>
+        <details><summary>Технические детали: отбор ATC48 и исключения</summary>
+          <p>Источник: <code>/mnt/weka/hrant/plinder_frequency/2024-06-v2/druglike_atc_candidates.tsv</code>. Архивная заметка описывает отбор из 270 часто встречающихся молекул PLINDER, каждая из которых найдена как минимум в десяти разных записях PDB, с использованием RCSB CCD и ATC-аннотаций из DrugBank. Все 63 сохранённые строки соответствуют этому порогу встречаемости.</p>
+          <p>14 совпадений определялись по полным исходным InChIKey. Допускались элементы C, N, O, F, P, S, Cl, Br, I. Балансировка по классам ATC и мишеням, а также разделение по молекулярным каркасам не проводились.</p>
+          <ol>
+            <li>Экземпляры лигандов определяются по <code>ligands_per_system.parquet</code> из PLINDER <code>2024-06/v2</code>.</li>
+            <li>Строки упорядочиваются по SHA-256 строки <code>plinder-atc48-v1|inchikey|pdb_id|system_id|ligand_id</code>. До проверки пригодности выбирается один экземпляр из индекса на каждую пару «молекула / PDB».</li>
+            <li>Сохраняются первые восемь принятых референсных структур из разных записей PDB. Если экземпляр не подходит, рассматривается следующая запись PDB, а не другие копии в той же записи.</li>
+            <li>Требуется читаемый лиганд с одним конформером и ожидаемой химической структурой, включая стереохимию. Ковалентные соединения, указанные в mmCIF <code>_struct_conn</code>, исключаются.</li>
+          </ol>
+          <pre>https://models.rcsb.org/v1/{pdb_id}/ligand?label_asym_id={ligand_asym}&amp;encoding=sdf
+https://files.rcsb.org/download/{PDB_ID}.cif.gz</pre>
+          <p>Из 457 попыток получения структур принято 379. В 68 случаях не совпала химическая структура или её стереохимическое представление, в десяти была аннотация ковалентного связывания. У 46 молекул по восемь референсных структур, у LPA — семь, у YY3 — четыре.</p>
+          <p>У OIN в источнике был неопределённый стереоцентр. Его конфигурацию задала первая принятая экспериментальная структура; затем эта структура использовалась для остальных референсов и генерации. Остальные 47 молекул точно совпадают с исходными изомерными SMILES. Стереохимия проверяется средствами RDKit при проверке структуры из SDF; отдельная проверка с удалением стереометок и повторным назначением по 3D-координатам не выполняется.</p>
+          <p>При построении запросов из PLINDER22 исключены 133 референса с менее чем четырьмя центрами и два ковалентных комплекса. В ATC48 у 65 было менее четырёх центров, а у трёх не оказалось подходящих белковых цепей. У CAM, OIN, DLU и LPA нет подходящих запросов.</p>
+          <p>Индекс PLINDER относится к исторической версии; файлы RCSB загружены позже и могут отличаться от архива 2024 года. Сохранённые хеши файлов фиксируют, какие координаты использовались.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>2. Откуда взялись координаты лиганда и белка?</h2>
+        <p><strong>И те и другие взяты из экспериментальной структуры.</strong> Мы не предсказывали белок по лиганду, не проводили докинг и не минимизировали энергию тяжёлых атомов лиганда.</p>
+        <p>Мы читаем исходный SDF лиганда и соответствующий файл комплекса mmCIF. С помощью Gemmi восстанавливаем биологическую сборку, указанную в записи структуры, и находим копию лиганда, координаты которой совпадают с исходным SDF.</p>
+        <p>Мы оставляем содержащие белок цепи, находящиеся на расстоянии не более 6 Å от лиганда, и экспортируем их тяжёлые атомы полипептида. Воды, металлы, кофакторы и нуклеиновые кислоты не используются для построения запроса. Затем Pharmit ограничивает область рецептора прямоугольным параллелепипедом вокруг лиганда с отступом 10 Å.</p>
+        <p>Белок используется для построения референсного запроса. Генерация конформеров и финальное сопоставление выполняются без входных данных о белке.</p>
+        <details><summary>Технические детали: проверка координат и подготовка белка</summary>
+          <ul>
+            <li>Очищенный референс и исходный лиганд должны совпадать после жёсткого совмещения с RMSD по тяжёлым атомам ≤ 0.001 Å. Проверяется до 10 000 соответствий атомов с учётом стереохимии; зеркальное отражение не допускается.</li>
+            <li>Биологическая сборка строится из первой структурной модели.</li>
+            <li>Для выбора копии лиганда атомы сопоставляются по элементам непосредственно в исходной системе координат, без пространственного наложения. Требуется RMSD ≤ 0.01 Å. Неоднозначный выбор лучшей копии при разнице в пределах 10<sup>−6</sup> Å отклоняется.</li>
+            <li>Правило 6 Å выбирает целые цепи, а не отдельные остатки кармана. В смешанной цепи небелковые атомы могут влиять на минимальное расстояние, но экспортируются только тяжёлые атомы полипептида.</li>
+            <li>Альтернативные положения атомов (altloc) выбираются по наибольшей заселённости для каждого имени атома. При равенстве сначала выбирается пустая метка, затем — по алфавиту. Это не гарантирует единой альтернативной конформации для всего остатка.</li>
+            <li>При экспорте в PDB точность координат — 0.001 Å. Ограничивающий параллелепипед Pharmit ориентирован вдоль осей координат и расширен на 10 Å.</li>
+            <li>Воды, металлы, кофакторы и нуклеиновые кислоты регистрируются, но исключаются. Явное назначение pH/состояния протонирования, перебор таутомеров и восстановление отсутствующих остатков не выполняются.</li>
+          </ul>
+        </details>
+      </section>
+
+      <section>
+        <h2>3. Какие фармакофорные признаки выбираются?</h2>
+        <p>Pharmit/Open Babel определяет стандартные фармакофорные признаки: доноры и акцепторы водородной связи, ионизируемые группы, ароматические кольца и гидрофобные группы. У каждого признака есть тип и трёхмерный центр; центр может представлять группу атомов, а не один атом.</p>
+        <p>Мы сохраняем признаки лиганда, соответствующие правилам контакта с белком в Pharmit. Эти геометрические правила не доказывают наличие взаимодействия.</p>
+        <div class="table-wrap"><table>
+          <thead><tr><th>Признак лиганда</th><th>Совместимый признак белка</th><th>Максимальное расстояние между центрами</th><th>Минимальное число признаков белка</th></tr></thead>
+          <tbody>
+            <tr><td>Донор / акцептор водородной связи</td><td>Акцептор / донор</td><td>4 Å</td><td>1</td></tr>
+            <tr><td>Группа, способная нести положительный / отрицательный заряд</td><td>Группа, способная нести отрицательный / положительный заряд</td><td>5 Å</td><td>1</td></tr>
+            <tr><td>Ароматический</td><td>Белковый класс Aromatic в Pharmit, включая катионные группы для катион–π-контактов</td><td>5 Å</td><td>1</td></tr>
+            <tr><td>Гидрофобный</td><td>Гидрофобный</td><td>6 Å</td><td>3</td></tr>
+          </tbody>
+        </table></div>
+        <p>Для гидрофобного признака «три» означает три точки признаков белка, не обязательно три остатка. Углы водородных связей и энергии взаимодействий не проверяются.</p>
+        <details><summary>Технические детали: определения признаков и кластеризация</summary>
+          <p>Эти правила взяты из Pharmit, а не подобраны заново для нашего исследования. Используется коммит <code>49d2c0a573f6e58bca62f674b33874bdd42c2274</code> без изменения определений признаков. Граничные значения расстояний включаются (≤).</p>
+          <p>Названия типов в программе: <code>HydrogenDonor</code>, <code>HydrogenAcceptor</code>, <code>PositiveIon</code>, <code>NegativeIon</code>, <code>Aromatic</code> и <code>Hydrophobic</code>. Химические группы задаются SMARTS-шаблонами. Определения ионизируемых групп могут включать формально нейтральные группы, поэтому эти метки не устанавливают экспериментальное состояние протонирования.</p>
+          <p>Pharmit объединяет близкие точки признаков в кластеры с расстоянием 2 Å для гидрофобных признаков и 0.1 Å для остальных типов. Поэтому число и положения гидрофобных признаков могут меняться между конформерами. Точные SMARTS-шаблоны и определения для белка находятся в файле <code>pharmarec.cpp</code> в пакете для аудита.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>4. Как строится запрос?</h2>
+        <p>Каждый выбранный экспериментальный экземпляр лиганда даёт не более одного запроса. <strong>Мы сохраняем все отобранные контактные признаки и требуем совпадения каждого из них.</strong> Признаки не выбираются случайно или вручную, а запрос не меняется для разных генераторов.</p>
+        <p>В запросе должно быть не менее четырёх различных центров признаков, не лежащих все на одной прямой. Это минимальное требование, а не правило выбора ровно четырёх признаков. Дополнительные признаки у сгенерированного конформера допускаются.</p>
+        <p>Основной допуск сопоставления — 0.5 Å на каждый признак. Это наш выбор строгого масштаба оценки, а не установленный биологический оптимум. Те же запросы проверяются с допусками 0.75 Å и 1.0 Å. Эти допуски не следует путать с расстояниями контакта с белком 4–6 Å, по которым отбирались признаки.</p>
+        <p>Сравниваются только типы и положения признаков. Ограничения на направления доноров/акцепторов и ориентацию ароматических колец не используются.</p>
+        <details><summary>Технические детали: параметры и проверка запросов</summary>
+          <pre>pharmit --cmd pharma --in raw_ligand.sdf --receptor native_receptor.pdb --out query.json</pre>
+          <ul>
+            <li>Все включённые признаки лиганда, прошедшие правила контакта, сохраняются и становятся обязательными; ограничения по направлению отключены.</li>
+            <li>Требуется не менее четырёх различных центров. Они подсчитываются последовательно с минимальным расстоянием 0.1 Å. Этот подсчёт не объединяет и не удаляет типизированные точки запроса.</li>
+            <li>Площадь наибольшего треугольника, образованного центрами, должна быть ≥ 0.1 Å². Наличие четырёх некомпланарных центров не требуется.</li>
+            <li>Ковалентные комплексы исключаются по депонированным или архивным аннотациям.</li>
+            <li>Запрос должен находить свой исходный экспериментальный лиганд. Он также должен находить его после поворота запроса на 0.613 радиана вокруг оси y и переноса на (11, −4.5, 2.25) Å.</li>
+          </ul>
+          <p>Все сохранённые запросы прошли эти проверки. Для них используется модифицированный индексированный поиск Pharmit, а не финальный алгоритм сопоставления, описанный далее. Они проверяют базовое поведение, но не доказывают, что будут найдены все возможные совпадения.</p>
+          <p>Состав запросов был зафиксирован без учёта совпадений генераторов. Численные пороги не проходили независимую калибровку на биологическую значимость.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>5. Как сопоставляются сгенерированные конформеры?</h2>
+        <p>Запрос сравнивается только с конформерами той же ожидаемой молекулы. Pharmit определяет признаки конформера <strong>без белка</strong>.</p>
+        <ol>
+          <li>Каждому признаку запроса назначается признак конформера того же типа. Один признак конформера нельзя использовать дважды.</li>
+          <li>Для каждого возможного соответствия весь конформер поворачивается и переносится с помощью совмещения методом наименьших квадратов по алгоритму Кабша (Kabsch).</li>
+          <li>Совпадение засчитывается, если после совмещения каждый назначенный признак находится в пределах выбранного допуска. Поиск останавливается после первого подходящего соответствия.</li>
+        </ol>
+        <p><strong>Внутренняя геометрия конформера не меняется.</strong> Вращений вокруг связей, минимизации энергии и докинга нет. Используются расстояния между центрами признаков, а не RMSD всех атомов молекулы. Столкновения с белком и аффинность связывания не проверяются.</p>
+        <div class="note warning">
+          <p><strong>Известное ограничение: часть совпадений может быть пропущена.</strong> Метод наименьших квадратов минимизирует сумму квадратов расстояний, а не самое большое отдельное расстояние. После такого совмещения один признак может оказаться за пределами допуска, хотя немного другой поворот или перенос поместил бы все признаки в допуск.</p>
+          <p>Для положительного результата есть подходящее совмещение. Отрицательный результат не всегда означает, что подходящего совмещения не существует. Мы воспроизвели это ограничение на искусственном примере, но его влияние на результаты для молекул и ранжирование методов неизвестно. При подготовке отчёта алгоритм не менялся.</p>
+        </div>
+        <details><summary>Технические детали: подготовка, поиск и известное ограничение</summary>
+          <p>Подготовка выполняется на копии: явные водороды удаляются, тяжёлые атомы перенумеровываются в порядке референсного SMILES. Сначала соответствие атомов ищется с учётом хиральности; если оно не найдено, используется только связность. Этот резервный вариант не исправляет стереохимию и не вызывает генерацию замены. Исходные координаты не меняются; экспорт в SDF имеет конечную точность. Для каждого конформера сохраняется собственный набор признаков.</p>
+          <p>Поиск перебирает все взаимно однозначные соответствия признаков одного типа, не используя точку кандидата повторно. Признаки разных типов могут иметь одинаковые координаты. Варианты отсекаются, если соответствующие попарные расстояния различаются более чем на 2r + 2ε, где ε = 0.0002 Å. Для каждого полного соответствия выполняется невзвешенное совмещение по Кабшу с определителем матрицы поворота +1; зеркальные отражения запрещены. Расстояние для каждого признака должно быть ≤ r + ε.</p>
+          <p>Размеры и направления признаков, исключённые объёмы, столкновения с белком, энергетические оценки и пороги RMSD по атомам в этой проверке не участвуют. Финальный поиск не использует триплетный индекс Pharmit; тот применяется в отдельных проверках корректности.</p>
+          <p>В искусственном примере r = 0.5 Å. Четыре точки запроса разных типов расположены в (−5,−5,0), (5,−5,0), (−5,5,0), (5,5,0). У кандидата первая координата x равна −4.1. Перенос на (−0.45,0,0) даёт ошибку 0.45 Å для каждой точки, но максимальная ошибка после совмещения по Кабшу — около 0.5701 Å, поэтому кандидат отклоняется. Этот результат воспроизводится скриптом <code>matching_limitation_check.py</code> из пакета для аудита.</p>
+          <p>Нужно либо явно использовать критерий «в пределах допуска после совмещения методом наименьших квадратов», либо проверить метод, который определяет, существует ли любое жёсткое совмещение, удовлетворяющее всем допускам, и затем пересчитать совпадения.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>6. Что проверяет PoseBusters?</h2>
+        <p>В основном анализе конформер должен и совпасть с запросом, и пройти проверки PoseBusters только для лиганда. PoseBusters получает ожидаемую химическую структуру, но не белок. Проверяются химическая структура, стереохимия и внутренняя геометрия, включая длины связей, углы, внутримолекулярные столкновения, плоскостность и отношение энергий.</p>
+        <p><strong>Мы не продолжаем генерацию, пока 1 000 конформеров не пройдут PoseBusters.</strong> Не прошедший проверку конформер всё равно учитывается в бюджете генерации и не заменяется.</p>
+        <p>Энергетическая проверка сравнивает кандидата с внутренним набором минимизированных референсных конформеров. Она не минимизирует и не исправляет сохранённую геометрию тяжёлых атомов кандидата.</p>
+        <details><summary>Технические детали: конфигурация PoseBusters и качество референсов</summary>
+          <div class="table-wrap"><table>
+            <thead><tr><th>Настройка</th><th>Значение или поведение</th></tr></thead>
+            <tbody>
+              <tr><td>Версия</td><td>PoseBusters 0.6.5 с собственной конфигурацией, а не стандартным готовым набором настроек.</td></tr>
+              <tr><td>Условие прохождения</td><td>Все возвращённые логические проверки должны быть пройдены. Сохранённые результаты, согласованные с порядком кандидатов, используются повторно.</td></tr>
+              <tr><td>Химия</td><td>Загрузка, базовые проверки RDKit, преобразование в InChI, связность, радикалы, формула, связи, тетраэдрическая стереохимия и стереохимия двойных связей; параметр InChI <code>w</code>.</td></tr>
+              <tr><td>Дистанционная геометрия</td><td>Параметры допусков длин связей/углов — 0.25; параметр столкновений — 0.3; водороды не учитываются. В RDKit включены <code>set15bounds</code>, <code>scaleVDW</code> и треугольное сглаживание; <code>macrocycle14</code> отключён. Это относительные допуски, а не расстояния, все выраженные в Å.</td></tr>
+              <tr><td>Плоскостность</td><td>Ароматические пяти- и шестичленные sp²-кольца и заданные в конфигурации тригонально-плоские системы C=C: максимальное отклонение от плоскости 0.25 Å.</td></tr>
+              <tr><td>Отношение энергий</td><td>Энергия UFF кандидата, делённая на среднюю энергию 50 референсных конформеров, сгенерированных ETKDGv3 и минимизированных UFF; порог 100; внутренний seed 42; один поток расчёта энергии на рабочий процесс.</td></tr>
+              <tr><td>Координаты</td><td>Очистка при загрузке, добавление водородов и повторное назначение стереохимии отключены. Энергетический модуль отдельно добавляет и релаксирует отсутствующие водороды на копии, фиксируя исходные атомы. Сохранённые тяжёлые атомы не исправляются.</td></tr>
+              <tr><td>Ошибки</td><td>Пакеты с ошибками рекурсивно делятся, чтобы определить проблемного кандидата. Кандидат, вызывающий ошибку и при отдельной проверке, считается непригодным. Генерация замены не выполняется.</td></tr>
+            </tbody>
+          </table></div>
+          <p>К экспериментальным референсам не применялся единый фильтр качества. В PLINDER22 сохранены 18 подходящих запросов с архивными предупреждениями о геометрии; экспериментальные референсы ATC48 не проверялись PoseBusters. «Не проверено» не означает «не прошло проверку».</p>
+          <p>Минимальная заселённость сопоставленных атомов лиганда ниже единицы для 67 подходящих запросов PLINDER22 и 35 запросов ATC48. При текущем повторном запуске PoseBusters для PLINDER число прошедших кандидатов отличается от прежнего результата для исходного Qwen на единицу; причина не установлена.</p>
+        </details>
+      </section>
+
+      <section>
+        <h2>7. Что нужно обсудить с экспертом?</h2>
+        <ol>
+          <li><strong>Сопоставление:</strong> приемлем ли критерий на основе метода наименьших квадратов или алгоритм должен находить любое совмещение, удовлетворяющее допуску? Оценить пропущенные совпадения и возможное изменение ранжирования.</li>
+          <li><strong>Признаки и контакты:</strong> проверить расстояния Pharmit, требование трёх гидрофобных признаков, обработку катион–π-контактов, определения ионизируемых групп и отсутствие ограничений по направлению.</li>
+          <li><strong>Подготовка молекул:</strong> решить, нужна ли стандартизация протонирования и таутомеров, а также независимая проверка OIN и стереохимии по 3D-координатам.</li>
+          <li><strong>Подготовка белка:</strong> проверить выбор первой модели, альтернативных положений атомов и целых цепей, а также исключение вод, металлов, кофакторов и нуклеиновых кислот.</li>
+          <li><strong>Параметры запросов:</strong> проверить требование совпадения всех признаков, минимум четырёх центров и основной допуск 0.5 Å. Решить, нужен ли отдельный анализ с допуском частичных совпадений.</li>
+          <li><strong>Качество референсов:</strong> решить, применять ли единые проверки ко всем экспериментальным структурам или отдельно представлять результаты по качеству геометрии, заселённости, ковалентному связыванию и разрешению структуры.</li>
+          <li><strong>Источник ATC48:</strong> восстановить скрипт аннотирования, версию базы и явные идентификаторы ATC/DrugBank. Проверить отбор по встречаемости, ограничения по элементам, выбор экземпляров PDB и отсутствие балансировки по классам и молекулярным каркасам.</li>
+        </ol>
+      </section>
+      <p class="footer small">Это более простое изложение существующего отчёта о методе. Исходные отчёты, таблицы параметров и подтверждающие материалы не изменены. Оба языка включены в этот файл; для переключения интернет не нужен.</p>
+    </article>
+  </main>
+</div>
+<script>
+  (() => {
+    const controls = [...document.querySelectorAll('input[name="language"]')];
+    const articles = [...document.querySelectorAll('main > article')];
+    function setLanguage(language, updateUrl = false) {
+      if (!['en', 'ru'].includes(language)) return;
+      controls.forEach(control => { control.checked = control.value === language; });
+      document.documentElement.lang = language;
+      document.title = articles.find(article => article.lang === language).dataset.title;
+      if (updateUrl) {
+        try { history.replaceState(null, '', '#' + language); } catch (_) { /* CSS switching also works without URL access. */ }
+      }
+    }
+    controls.forEach(control => control.addEventListener('change', () => {
+      if (control.checked) setLanguage(control.value, true);
+    }));
+    function readUrlLanguage() {
+      const language = location.hash.slice(1);
+      if (['en', 'ru'].includes(language)) setLanguage(language);
+    }
+    readUrlLanguage();
+    window.addEventListener('hashchange', readUrlLanguage);
+    let closedDetails = [];
+    window.addEventListener('beforeprint', () => {
+      closedDetails = [...document.querySelectorAll('details:not([open])')];
+      closedDetails.forEach(detail => { detail.open = true; });
+    });
+    window.addEventListener('afterprint', () => {
+      closedDetails.forEach(detail => { detail.open = false; });
+      closedDetails = [];
+    });
+  })();
+</script>
+</body>
+</html>

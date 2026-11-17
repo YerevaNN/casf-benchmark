@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PLINDER pharmacophore queries: methods and provenance audit</title>
+<style>
+body{font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif;color:#182635;background:#f2f5f7;margin:0}
+main{max-width:1040px;margin:32px auto;background:white;padding:42px 52px;border:1px solid #dce3e8}
+h1{font-size:30px;line-height:1.2;margin:0 0 12px}h2{font-size:22px;border-bottom:1px solid #ced8df;padding-bottom:8px;margin-top:38px}h3{font-size:18px;margin-top:24px}
+p{margin:12px 0}a{color:#075d96}table{border-collapse:collapse;width:100%;font-size:14px;margin:18px 0}th,td{border:1px solid #d5dfe6;padding:9px 11px;vertical-align:top;text-align:left}th{background:#eaf0f5}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:13px}code{overflow-wrap:anywhere}pre{background:#eef3f6;padding:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.meta{color:#506172}.callout{border-left:4px solid #c9821d;background:#fff6e5;padding:14px 18px;margin:20px 0}.callout p:first-child{margin-top:0}.callout p:last-child{margin-bottom:0}.lead{font-size:18px}.small{font-size:13px;color:#506172}li{margin:7px 0}nav{background:#eef3f6;padding:14px 20px}section{break-inside:auto}thead{display:table-header-group}
+@media print{body{background:white;font-size:10pt}main{max-width:none;margin:0;padding:0;border:0}h1{font-size:22pt}h2{font-size:15pt;break-after:avoid}h3{break-after:avoid}table{font-size:9pt}tr,pre,.callout{break-inside:avoid}a{color:inherit}nav{display:none}@page{size:A4;margin:17mm}}
+</style>
+</head>
+<body><main>
+<header>
+<h1>Pharmacophore-query extraction and matching</h1>
+<p class="lead">Methods, parameter choices, and decisions for expert review</p>
+<p class="meta">17 November 2026 · PLINDER22 and ATC48</p>
+<p>This describes the implemented method. “Our choice” denotes a project decision; “inherited” denotes behavior from the pinned software. Queries and existing results were not changed for this report.</p>
+</header>
+<nav><a href="#cohorts">1. Reference inputs / ATC48</a> · <a href="#poses">2. Pose and protein context</a> · <a href="#features">3. Contact features</a> · <a href="#queries">4. Query construction</a> · <a href="#matching">5. Matching</a> · <a href="#pb">6. PoseBusters</a> · <a href="#review">7. Decisions</a></nav>
+
+<section id="cohorts"><h2>1. Reference inputs and ATC48 selection</h2>
+<table><thead><tr><th>Input / outcome</th><th>PLINDER22</th><th>ATC48</th></tr></thead><tbody>
+<tr><td>Molecules / reference ligand instances</td><td>22 / 1,067</td><td>48 / 379</td></tr>
+<tr><td>Eligible queries / contributing molecules</td><td>932 / 22</td><td>311 / 44</td></tr>
+<tr><td>Query exclusions</td><td>133 with fewer than four centers; two covalent complexes</td><td>65 with fewer than four centers; three without qualifying protein-chain context</td></tr>
+</tbody></table>
+<p>PLINDER22 uses its existing audited references. Query coordinates come from each mapped <em>raw deposited ligand pose</em>, not the cleaned files’ aligned display coordinates.</p>
+<h3>Where ATC48 came from</h3>
+<p>The immediate source was the existing local table <code>/mnt/weka/hrant/plinder_frequency/2024-06-v2/druglike_atc_candidates.tsv</code>, containing <strong>63 identities</strong>. Its archived provenance note describes a later screen of 270 frequent PLINDER identities (at least ten distinct PDB entries), resolved against the RCSB CCD and selected using DrugBank-derived ATC annotations. All 63 saved rows meet that PDB-frequency minimum.</p>
+<p>Our builder excluded <strong>14 identities overlapping the original PLINDER23 shortlist</strong>, using full source InChIKeys, and <strong>one additional boron-containing molecule</strong>, vaborbactam. Allowed elements were C, N, O, F, P, S, Cl, Br, I. All remaining <strong>48</strong> were retained; there was no ATC-class balancing, target balancing, scaffold separation, or generator-performance selection.</p>
+<p><strong>Provenance gap:</strong> the table stores ATC-related names and DrugBank synonyms, but not explicit ATC codes or DrugBank IDs. The upstream annotation-join script/database snapshot is unavailable. ATC48 is therefore an internally assembled, frequency-enriched extension—not an official PLINDER split or a random/balanced ATC benchmark.</p>
+<h3>Which ATC48 experimental poses were selected?</h3>
+<ol>
+<li>Use <code>ligands_per_system.parquet</code> from the same PLINDER <code>2024-06/v2</code> lineage to identify complexes and ligand instances.</li>
+<li>Rank rows by SHA-256 of <code>plinder-atc48-v1|inchikey|pdb_id|system_id|ligand_id</code>. Keep one indexed ligand instance per identity/PDB before validity checking.</li>
+<li>Retain the first <strong>eight accepted distinct-PDB references</strong> in that order. A rejected instance leads to the next PDB, not a search through alternative copies in the same PDB. Eight was our practical computation/reference-count cap.</li>
+<li>Retrieve the deposited ligand instance and complex—not the CCD ideal ligand—from RCSB:</li>
+</ol>
+<pre>https://models.rcsb.org/v1/{pdb_id}/ligand?label_asym_id={ligand_asym}&amp;encoding=sdf
+https://files.rcsb.org/download/{PDB_ID}.cif.gz</pre>
+<p>Require one readable ligand/conformer and matching isomeric identity; exclude deposited covalent connections from mmCIF <code>_struct_conn</code>. Of 457 attempts, 379 were accepted, 68 had identity/stereochemical-representation mismatches, and ten were covalently annotated. Forty-six molecules have eight references, LPA seven, and YY3 four.</p>
+<p>One source identity, OIN, had an unspecified stereocenter. Its first acceptable experimental reference resolved that center; that resolved identity was used for subsequent references and generation. The other 47 identities match the source isomeric SMILES exactly. The builder’s stereo-pass flag follows RDKit SDF identity checking, not a separate explicit remove-and-reassign-from-3D audit.</p>
+<p>After query eligibility checks, CAM, OIN, DLU, and LPA have no eligible query. The historical PLINDER index and subsequently downloaded RCSB files are distinct provenance layers; current RCSB files are not assumed bit-identical to the 2024 archive. Cached file hashes identify the coordinates actually used.</p>
+</section>
+
+<section id="poses"><h2>2. Experimental pose and protein context</h2>
+<p>We use the raw ligand SDF, matching mmCIF, recorded biological assembly, and ligand asym ID. Both protein and ligand coordinates are experimental; no protein pose is inferred from the ligand, and no docking or heavy-atom relaxation is performed.</p>
+<ol>
+<li>Check the cleaned reference record against its raw ligand using stereo-aware heavy-atom mappings (up to <strong>10,000</strong>) and proper rigid alignment; require RMSD ≤ <strong>0.001 Å</strong>.</li>
+<li>Build the declared biological assembly with Gemmi from the <strong>first structural model</strong>.</li>
+<li>Locate the ligand copy by element-constrained atom assignment to raw coordinates <em>without superposition</em>; require coordinate RMSD ≤ <strong>0.01 Å</strong>. Reject ambiguous best-copy ties within <strong>10<sup>−6</sup> Å</strong>.</li>
+<li>Select protein-bearing assembly chains with a minimum ligand distance ≤ <strong>6 Å</strong>; export polypeptide heavy atoms. This is a chain selection, not a residue-wise pocket crop. In mixed chains, the selection minimum can include non-protein atoms, although the exported receptor is protein-only.</li>
+</ol>
+<p>Protein altloc selection is highest occupancy per atom name, then blank/lexical label for ties—not a consistent residue-level alternative conformer. PDB export has 0.001 Å coordinate precision. Waters, metals, cofactors, and nucleic acids are recorded but excluded from extraction. There is no explicit pH/protomer assignment, tautomer enumeration, or missing-residue repair.</p>
+<p>Pharmit additionally trims the receptor to the ligand’s axis-aligned bounding box padded by <strong>10 Å</strong> (inherited). This differs from the 6 Å chain-selection rule and from feature-contact distances below.</p>
+</section>
+
+<section id="features"><h2>3. Feature recognition and contact selection</h2>
+<p>We use Pharmit/Open Babel feature recognition, pinned to Pharmit commit <code>49d2c0a573f6e58bca62f674b33874bdd42c2274</code>, with unchanged feature definitions. A feature is a chemical type plus a 3D center derived from an atom or group; it is not necessarily an atom.</p>
+<table><thead><tr><th>Ligand feature</th><th>Compatible protein feature</th><th>Maximum center distance</th><th>Required partner points</th></tr></thead><tbody>
+<tr><td>HydrogenDonor / HydrogenAcceptor</td><td>HydrogenAcceptor / HydrogenDonor</td><td>4 Å</td><td>1</td></tr>
+<tr><td>PositiveIon / NegativeIon</td><td>NegativeIon / PositiveIon</td><td>5 Å</td><td>1</td></tr>
+<tr><td>Aromatic</td><td>Protein Aromatic class, including cationic SMARTS for cation–π recognition</td><td>5 Å</td><td>1</td></tr>
+<tr><td>Hydrophobic</td><td>Hydrophobic</td><td>6 Å</td><td>3</td></tr>
+</tbody></table>
+<p>These are <strong>inherited Pharmit rules</strong>, with inclusive distance tests (≤). Hydrophobic partner counts refer to feature points, not necessarily distinct residues. No interaction energy or hydrogen-bond angle is tested.</p>
+<p>Inherited feature clustering uses <strong>2 Å</strong> for hydrophobic points and <strong>0.1 Å</strong> for other classes. Hydrophobic centers/counts can therefore vary by conformer. Ion features are SMARTS-defined classes that can include formally neutral ionizable groups; they do not establish experimental protonation. Exact SMARTS and protein-specific definitions are in the bundled <code>pharmarec.cpp</code>.</p>
+</section>
+
+<section id="queries"><h2>4. Query construction and eligibility</h2>
+<p>Run <code>pharmit --cmd pharma --in raw_ligand.sdf --receptor native_receptor.pdb --out query.json</code>. Our wrapper keeps all enabled, contact-qualified ligand features, marks each required, and disables directional vectors. There is no random subset, manual feature prioritization, or generator-dependent feature selection. Each selected experimental instance produces at most one full-pattern query.</p>
+<table><thead><tr><th>Our parameter / choice</th><th>Value</th><th>Meaning</th></tr></thead><tbody>
+<tr><td>Primary matching radius</td><td>0.5 Å per required feature</td><td>Declared strict evaluation scale; not a calibrated biological optimum or a ligand–protein contact cutoff</td></tr>
+<tr><td>Sensitivity radii</td><td>0.75, 1.0 Å</td><td>Identical features/coordinates, changed tolerances only</td></tr>
+<tr><td>Direction constraints</td><td>Off</td><td>Type and center position only; no ring-normal or donor/acceptor-vector requirement</td></tr>
+<tr><td>Feature requirements</td><td>All retained points required</td><td>No partial-query hit; extra candidate features permitted</td></tr>
+<tr><td>Minimum distinct centers</td><td>4</td><td>Pragmatic nontrivial-pattern rule</td></tr>
+<tr><td>Distinct-center separation</td><td>≥ 0.1 Å, greedy order</td><td>Counts centers for eligibility; does not merge/delete typed query points</td></tr>
+<tr><td>Non-collinearity</td><td>Maximum triangle area ≥ 0.1 Å²</td><td>Does not require four non-coplanar centers</td></tr>
+<tr><td>Covalent complexes</td><td>Excluded</td><td>Based on deposited/archived covalent annotations</td></tr>
+<tr><td>Native self-match and rigid invariance</td><td>Required</td><td>Original query and a copy rotated 0.613 radians about y and translated (11, −4.5, 2.25) Å must recover their native ligand</td></tr>
+</tbody></table>
+<p>All eligible queries pass the saved self-match/invariance checks. These use the patched Pharmit indexed-search backend, whereas final generated-candidate membership uses the custom matcher below. They are sanity checks, not a completeness proof. Eligibility was frozen without reference to generator hits; the thresholds were not independently calibrated for biological optimality.</p>
+</section>
+
+<section id="matching"><h2>5. Matching generated conformers</h2>
+<h3>Candidate preparation</h3>
+<p>Only conformers of the same expected molecule are compared. On a copy, explicit hydrogens are removed and heavy atoms renumbered into the reference SMILES order. Mapping tries chirality-aware correspondence, then connectivity-only fallback; this is atom-order bookkeeping, not stereo repair or rejection/refill. Pharmit recognizes all candidate features <em>without</em> a receptor, retaining per-conformer feature sets when clustering changes their counts. Stored source coordinates remain unchanged; SDF export has finite precision.</p>
+<h3>Implemented acceptance rule</h3>
+<ol>
+<li>Give each query point a domain of candidate points with the <strong>same feature-type label</strong>.</li>
+<li>Backtrack over <strong>injective assignments</strong>: no candidate feature point is reused. Co-located points of different types are allowed.</li>
+<li>Prune assignments when a query/candidate pair-distance difference exceeds <strong>2r + 2ε</strong>, where <strong>ε = 0.0002 Å</strong>.</li>
+<li>For each complete assignment, compute the unweighted least-squares <strong>Kabsch rotation and translation</strong>, enforcing determinant +1: no reflection.</li>
+<li>Accept if <strong>every assigned point</strong> has residual ≤ <strong>r + ε</strong> after that fit. Stop at the first passing assignment; membership is Boolean per conformer.</li>
+</ol>
+<p>No internal bond rotations, feature-direction/size constraints, excluded volume, protein clashes, atom-level RMSD threshold, or energy score enter this test. Final memberships do <strong>not</strong> use Pharmit’s triplet index; indexed-search pruning/orientation settings apply to backend/self-QA stages, not this final correspondence search.</p>
+<div class="callout">
+<p><strong>Decision needed: least-squares fit versus any feasible rigid fit.</strong> Correspondence enumeration is exhaustive, but Kabsch minimizes total squared error—not maximum point error. A different rigid transform can fit all tolerance spheres even when the Kabsch fit fails.</p>
+<p>A synthetic check at r = 0.5 Å uses four uniquely typed query points at (−5,−5,0), (5,−5,0), (−5,5,0), (5,5,0), with the candidate’s first x coordinate changed to −4.1. Translation by (−0.45,0,0) gives 0.45 Å residual everywhere, yet the implementation rejects it because the Kabsch maximum residual is approximately 0.5701 Å.</p>
+<p>Thus positives have a valid rigid witness, but negatives are not certified impossible under arbitrary rigid alignment. The impact on real molecular results/rankings is unknown. Either explicitly use a “tolerance after least-squares fit” endpoint, or validate/replace the fit test with a rigid minimax/feasibility method and reassess memberships. The bundled <code>matching_limitation_check.py</code> reproduces this finding; no matcher fix was made for this report.</p>
+</div>
+</section>
+
+<section id="pb"><h2>6. PoseBusters and reference quality</h2>
+<p>A primary hit must also pass the candidate’s ligand-only PoseBusters mask. PB receives the expected molecular identity and <strong>no protein</strong>; it is not a native-pose RMSD or pocket-clash test. A pass requires all returned Boolean checks. Failures consume their allotted candidate position and are not replaced.</p>
+<table><thead><tr><th>Check / setting</th><th>Implemented choice</th></tr></thead><tbody>
+<tr><td>Version / configuration</td><td>PoseBusters 0.6.5 with a custom configuration, not an assumed standard preset</td></tr>
+<tr><td>Chemistry / identity</td><td>Loading, RDKit sanity, InChI conversion, connectivity, radicals, formula, bonds, tetrahedral and double-bond stereo; InChI option <code>w</code></td></tr>
+<tr><td>Distance geometry</td><td>Bond/angle tolerance parameters 0.25; clash parameter 0.3; hydrogens ignored. RDKit bounds: set15bounds, scaleVDW and triangle smoothing on; macrocycle14 configuration off. These are relative PB tolerance parameters, not all Å distances.</td></tr>
+<tr><td>Flatness</td><td>Aromatic five-/six-membered sp² rings and configured trigonal-planar C=C systems: 0.25 Å plane-deviation threshold</td></tr>
+<tr><td>Energy ratio</td><td>Observed UFF energy / mean energy of 50 ETKDGv3-generated, UFF-minimized reference conformers; threshold 100; internal seed 42; one energy thread per worker</td></tr>
+<tr><td>Coordinate handling</td><td>PB loading cleanup, added hydrogens and stereo reassignment off. The energy module separately adds/relaxes missing hydrogens on a copy while fixing original atoms; stored candidate heavy atoms are not repaired.</td></tr>
+<tr><td>Errors / reuse</td><td>Batch errors isolated recursively; failing singleton invalid. Saved, candidate-aligned masks reused; no PB-driven refill.</td></tr>
+</tbody></table>
+<p><strong>Native-reference quality is not this gate.</strong> PLINDER22 retains 18 eligible queries with archived geometry flags; ATC48 native references were not PB-screened. ATC’s stored “not screened” flag must not be interpreted as an observed failure. Minimum mapped ligand occupancy is below one for 67 PLINDER22 and 35 ATC48 eligible queries. The current PLINDER PB replay differs from the older original-Qwen count by one pass; its cause is unresolved.</p>
+</section>
+
+<section id="review"><h2>7. Decisions for the auditor</h2>
+<ol>
+<li><strong>Matching endpoint:</strong> Accept the explicit Kabsch-based definition, or require any feasible rigid alignment? How should false negatives and ranking impact be assessed?</li>
+<li><strong>Feature/contact rules:</strong> Are the inherited distances, hydrophobic three-partner rule, cation–π extension, SMARTS ion classes, and lack of directional constraints suitable?</li>
+<li><strong>Chemical states:</strong> Is explicit protonation/tautomer standardization needed? Should OIN’s stereo specialization and independent coordinate-derived stereo checking be tightened?</li>
+<li><strong>Protein context:</strong> Are first-model assemblies, atom-wise altloc choice, the chain-level cutoff, and exclusion of waters/metals/cofactors/RNA acceptable?</li>
+<li><strong>Query definition:</strong> Keep all features required and the four-center eligibility rule, or add a separately declared partial-query sensitivity? Is 0.5 Å a suitable primary scale?</li>
+<li><strong>Reference quality:</strong> Should native poses receive a consistent quality screen or quality-stratified analysis, including geometry, occupancy, covalency, and structural resolution?</li>
+<li><strong>ATC48 provenance:</strong> Obtain the upstream annotation script/version and explicit ATC/DrugBank mapping. Are frequency enrichment, element restriction, per-PDB instance selection, and lack of class/scaffold balancing appropriate?</li>
+</ol>
+<p>The companion parameter/cohort tables and evidence remain in the review package; this shortened report is limited to the method and unresolved choices.</p>
+</section>
+</main></body></html>

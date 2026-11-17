@@ -1,0 +1,55 @@
+stage,parameter,value,units,origin
+plinder22/query,primary_radius,0.5,Angstrom,Project configuration
+plinder22/query,sensitivity_radii,"[0.75, 1.0]",Angstrom,Project configuration
+plinder22/query,positional_only,true,,Project configuration
+plinder22/query,contact_cutoff,6.0,Angstrom,Project configuration
+plinder22/query,native_copy_max_rmsd,0.01,Angstrom,Project configuration
+plinder22/query,cleaned_native_max_rmsd,0.001,Angstrom,Project configuration
+plinder22/query,minimum_distinct_centers,4,,Project configuration
+plinder22/query,minimum_center_separation,0.1,Angstrom,Project configuration
+plinder22/query,minimum_triangle_area,0.1,Angstrom^2,Project configuration
+plinder22/query,exclude_covalent,true,,Project configuration
+atc48/query,primary_radius,0.5,Angstrom,Project configuration
+atc48/query,sensitivity_radii,"[0.75, 1.0]",Angstrom,Project configuration
+atc48/query,positional_only,true,,Project configuration
+atc48/query,contact_cutoff,6.0,Angstrom,Project configuration
+atc48/query,native_copy_max_rmsd,0.01,Angstrom,Project configuration
+atc48/query,cleaned_native_max_rmsd,0.001,Angstrom,Project configuration
+atc48/query,minimum_distinct_centers,4,,Project configuration
+atc48/query,minimum_center_separation,0.1,Angstrom,Project configuration
+atc48/query,minimum_triangle_area,0.1,Angstrom^2,Project configuration
+atc48/query,exclude_covalent,true,,Project configuration
+atc48/cohort,minimum_distinct_source_pdbs_documented_upstream,10,,Saved table / builder / legacy provenance note
+atc48/cohort,source_candidates,63,,Saved table / builder / legacy provenance note
+atc48/cohort,excluded_original_identities,14,,Saved table / builder / legacy provenance note
+atc48/cohort,excluded_additional_element,1,,Saved table / builder / legacy provenance note
+atc48/cohort,retained_identities,48,,Saved table / builder / legacy provenance note
+atc48/cohort,reference_cap_per_identity,8,,Saved table / builder / legacy provenance note
+atc48/cohort,reference_seed,plinder-atc48-v1,,Saved table / builder / legacy provenance note
+features_matching_QA,donor_acceptor_contact_distance,4,Angstrom,Pharmit default
+features_matching_QA,ion_pair_contact_distance,5,Angstrom,Pharmit default
+features_matching_QA,aromatic_contact_distance_including_protein_cationic_features,5,Angstrom,Pharmit default
+features_matching_QA,hydrophobic_contact_distance,6,Angstrom,Pharmit default
+features_matching_QA,hydrophobic_minimum_partner_points,3,points,Pharmit default
+features_matching_QA,hydrophobic_point_clustering_limit,2,Angstrom,Pharmit default
+features_matching_QA,other_feature_point_clustering_limit,0.1,Angstrom,Pharmit default
+features_matching_QA,receptor_bounding_box_padding,10,Angstrom,Pharmit default
+features_matching_QA,matching_numerical_tolerance,0.0002,Angstrom,Custom matcher
+features_matching_QA,pair_distance_pruning_bound,2*r + 2*epsilon,Angstrom,Custom matcher
+features_matching_QA,continuous_fit,"proper least-squares Kabsch, not rigid minimax feasibility",,Custom matcher
+features_matching_QA,cleaned_native_maximum_atom_mappings,10000,mappings,Custom atom mapping
+features_matching_QA,assembly_ambiguity_absolute_tolerance,1e-06,Angstrom,Custom assembly selection
+features_matching_QA,native_QA_rotation,0.613,radians around y,Custom QA
+features_matching_QA,native_QA_translation,"11,-4.5,2.25",Angstrom,Custom QA
+features_matching_QA,PB_energy_ratio_threshold,100,ratio,Custom PB configuration
+features_matching_QA,PB_energy_reference_ensemble_size,50,conformers,Custom PB configuration
+features_matching_QA,PB_energy_reference_seed,42,,PoseBusters 0.6.5 internal default
+features_matching_QA,PB_energy_forcefield,UFF,,PoseBusters 0.6.5 implementation
+features_matching_QA,PB_flatness_threshold,0.25,Angstrom,Custom PB configuration
+v2_sampling,budgets,"[100, 500, 1000]",,Frozen recipe configuration
+v2_sampling,radii,"[0.5, 0.75, 1.0]",,Frozen recipe configuration
+v2_sampling,cluster_radii,"[0.5, 1.0]",,Frozen recipe configuration
+v2_sampling,sampling_repeats,20,,Frozen recipe configuration
+v2_sampling,bootstrap_replicates,2000,,Frozen recipe configuration
+v2_sampling,seed,20261118,,Frozen recipe configuration
+v2_sampling,workers,8,,Frozen recipe configuration

@@ -1,0 +1,35 @@
+experiment_id: dataset_recipe_experiment_v2_qwen_loqi
+output_dir: /mnt/weka/mbedrosian/code/casf-benchmark/data/results/dataset_recipe_experiment_v2_qwen_loqi
+sources: [qwen, loqi]
+budgets: [100, 500, 1000]
+radii: [0.5, 0.75, 1.0]
+cluster_radii: [0.5, 1.0]
+sampling_repeats: 20
+bootstrap_replicates: 2000
+seed: 20261118
+reference_cluster_radius: 0.5
+primary_gate: posebusters
+workers: 8
+qwen_completion_manifest: /mnt/weka/mbedrosian/code/casf-benchmark/data/results/dataset_recipe_experiment_v1/generation/qwen_atc48/topup_manifest.json
+scope_revision:
+  supersedes: /mnt/weka/mbedrosian/code/casf-benchmark/data/results/dataset_recipe_experiment_v1
+  excluded_sources: [flowr]
+  reason: User requested dropping FlowR after the generation audit identified custom force-field relaxation, mirror correction, and stereo-rejection/refill in its benchmark adapter.
+  exploratory: Revised after preliminary results were inspected; not a preregistered independent validation.
+panels:
+  plinder22:
+    source_config: src/casf_benchmark/config/pharmacophore_plinder22.yaml
+    methods:
+      qwen: qwen_1p7b_v2_coordtoken_step41054
+      loqi: loqi_druglike
+      rdkit_raw: rdkit_random_raw_druglike
+      rdkit_minimized: rdkit_random_minimized_22_druglike
+  atc48:
+    source_config: src/casf_benchmark/config/pharmacophore_plinder_atc48.yaml
+    methods:
+      qwen: qwen_1p7b_v2_coordtoken_step41054_atc48
+      loqi: loqi_atc48
+      rdkit_raw: rdkit_etkdg_raw_atc48
+      rdkit_minimized: rdkit_etkdg_mmff94s_atc48
+    completed_pools:
+      qwen: /mnt/weka/mbedrosian/code/casf-benchmark/data/results/dataset_recipe_experiment_v1/generation/qwen_atc48/qwen_completed_1000.pickle

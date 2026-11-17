@@ -18,6 +18,8 @@ import importlib.util
 import json
 import os
 import pickle
+import random
+import re
 import sys
 import tempfile
 import types
@@ -53,6 +55,19 @@ def part_path(output_dir: Path, molecule_index: int) -> Path:
     return output_dir / "parts" / f"{molecule_index:03d}.pickle"
 
 
+def shard_part_path(
+    output_dir: Path,
+    molecule_index: int,
+    shard_index: int,
+    shard_count: int,
+) -> Path:
+    return (
+        output_dir
+        / "parts"
+        / f"{molecule_index:03d}.shard-{shard_index:03d}-of-{shard_count:03d}.pickle"
+    )
+
+
 def _atomic_pickle_dump(value: object, destination: Path) -> None:
     destination.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.NamedTemporaryFile(
@@ -81,24 +96,56 @@ def merge_parts(druglike_pickle: Path, output_dir: Path) -> Path:
     metadata = []
     missing = []
     for index, expected_smiles in enumerate(smiles):
-        path = part_path(output_dir, index)
-        if not path.is_file():
-            missing.append(path)
-            continue
-        with path.open("rb") as handle:
-            part = pickle.load(handle)
-        if not isinstance(part, dict) or list(part) != [expected_smiles]:
-            raise ValueError(
-                f"{path} must contain exactly molecule {index} ({expected_smiles!r}); "
-                f"found keys {list(part) if isinstance(part, dict) else type(part).__name__}"
-            )
-        mols = part[expected_smiles]
-        if not isinstance(mols, list):
-            raise TypeError(f"{path}: conformers must be a list")
+        shards = sorted((output_dir / "parts").glob(f"{index:03d}.shard-*-of-*.pickle"))
+        if shards:
+            parsed = []
+            for path in shards:
+                match = re.fullmatch(
+                    rf"{index:03d}\.shard-(\d{{3}})-of-(\d{{3}})\.pickle",
+                    path.name,
+                )
+                if match is None:
+                    raise ValueError(f"Malformed shard filename: {path}")
+                parsed.append((int(match.group(1)), int(match.group(2)), path))
+            shard_counts = {count for _, count, _ in parsed}
+            if len(shard_counts) != 1:
+                raise ValueError(f"Inconsistent shard counts for molecule {index}: {shards}")
+            shard_count = shard_counts.pop()
+            shard_indices = [shard_index for shard_index, _, _ in parsed]
+            if shard_indices != list(range(shard_count)):
+                raise FileNotFoundError(
+                    f"Incomplete shards for molecule {index}: {shard_indices} of {shard_count}"
+                )
+            paths = [path for _, _, path in parsed]
+        else:
+            path = part_path(output_dir, index)
+            if not path.is_file():
+                missing.append(path)
+                continue
+            paths = [path]
+
+        mols = []
+        for path in paths:
+            with path.open("rb") as handle:
+                part = pickle.load(handle)
+            if not isinstance(part, dict) or list(part) != [expected_smiles]:
+                raise ValueError(
+                    f"{path} must contain exactly molecule {index} ({expected_smiles!r}); "
+                    f"found keys {list(part) if isinstance(part, dict) else type(part).__name__}"
+                )
+            shard_mols = part[expected_smiles]
+            if not isinstance(shard_mols, list):
+                raise TypeError(f"{path}: conformers must be a list")
+            mols.extend(shard_mols)
         mols = normalize_conformers(mols)
         merged[expected_smiles] = mols
         metadata.append(
-            {"molecule_index": index, "smiles": expected_smiles, "n_conformers": len(mols)}
+            {
+                "molecule_index": index,
+                "smiles": expected_smiles,
+                "n_conformers": len(mols),
+                "part_count": len(paths),
+            }
         )
     if missing:
         preview = ", ".join(str(path) for path in missing[:5])
@@ -255,8 +302,21 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--inference-steps", type=int)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
+    parser.add_argument("--conformer-shard-index", type=int)
+    parser.add_argument("--conformer-shard-count", type=int, default=1)
     parser.add_argument("--merge-parts", action="store_true")
     return parser
+
+
+def seed_sampling(seed: int) -> None:
+    import numpy as np
+    import torch
+
+    random.seed(seed)
+    np.random.seed(seed % (2**32))
+    torch.manual_seed(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
 
 
 def main() -> None:
@@ -267,6 +327,18 @@ def main() -> None:
         return
     if args.num_conformers <= 0 or args.limit_molecules <= 0 or args.molecule_offset < 0:
         raise SystemExit("Conformer count/limit must be positive and offset must be non-negative")
+    if args.conformer_shard_count <= 0:
+        raise SystemExit("Conformer shard count must be positive")
+    if args.conformer_shard_index is None:
+        if args.conformer_shard_count != 1:
+            raise SystemExit("A shard index is required when shard count exceeds one")
+        shard_index = 0
+    else:
+        shard_index = args.conformer_shard_index
+        if not 0 <= shard_index < args.conformer_shard_count:
+            raise SystemExit("Conformer shard index is outside the shard count")
+        if args.limit_molecules != 1:
+            raise SystemExit("Sharded generation processes exactly one molecule per task")
 
     smiles = load_druglike_smiles(args.druglike_pickle)
     selected = list(
@@ -282,19 +354,35 @@ def main() -> None:
 
     sampler = build_sampler(args.model, args)
     for index, molecule_smiles in selected:
+        shard_size, extra = divmod(args.num_conformers, args.conformer_shard_count)
+        requested = shard_size + int(shard_index < extra)
+        if requested <= 0:
+            raise RuntimeError("Conformer shard has no assigned samples")
+        effective_seed = args.seed + index * 10_000 + shard_index
+        seed_sampling(effective_seed)
         mols, batches, errors = generate_one(
-            args.model, sampler, molecule_smiles, args.num_conformers, index
+            args.model, sampler, molecule_smiles, requested, index
         )
         usable = normalize_conformers(mols)
         if errors:
             print(f"[{index:03d}] warnings={errors}", flush=True)
         if not usable:
             raise RuntimeError(f"{args.model} generated no usable conformers for molecule {index}")
-        destination = part_path(args.output_dir, index)
+        destination = (
+            shard_part_path(
+                args.output_dir,
+                index,
+                shard_index,
+                args.conformer_shard_count,
+            )
+            if args.conformer_shard_count > 1
+            else part_path(args.output_dir, index)
+        )
         _atomic_pickle_dump(OrderedDict([(molecule_smiles, usable)]), destination)
         print(
             f"[{index:03d}] model={args.model} conformers={len(usable)}/"
-            f"{args.num_conformers} batches={batches} -> {destination}",
+            f"{requested} batches={batches} seed={effective_seed} "
+            f"shard={shard_index + 1}/{args.conformer_shard_count} -> {destination}",
             flush=True,
         )
 

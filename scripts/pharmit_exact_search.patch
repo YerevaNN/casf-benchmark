@@ -1,0 +1,65 @@
+diff --git a/src/QueryTripletFingerprint.cpp b/src/QueryTripletFingerprint.cpp
+index 64f109f..de16040 100644
+--- a/src/QueryTripletFingerprint.cpp
++++ b/src/QueryTripletFingerprint.cpp
+@@ -34,6 +34,12 @@ using namespace OpenBabel;
+ extern cl::opt<bool> Quiet;
+ cl::opt<bool> SkipFingers("skip-fingers", cl::desc("don't check triplet fingerprints"), cl::Hidden);
+ cl::opt<bool> SkipRangedFingers("skip-ranged-fingers", cl::desc("don't check triplet fingerprint ranges"), cl::Hidden);
++cl::opt<bool> SkipGeometricPruning("skip-geometric-pruning",
++		cl::desc("don't apply higher-order triplet pruning bounds"), cl::Hidden);
++
++bool skipGeometricPruning() {
++	return SkipGeometricPruning;
++}
+ 
+ struct Plane
+ {
+diff --git a/src/QueryTripletFingerprint.h b/src/QueryTripletFingerprint.h
+index 52339b2..f9f1e60 100644
+--- a/src/QueryTripletFingerprint.h
++++ b/src/QueryTripletFingerprint.h
+@@ -31,6 +31,9 @@ See the LICENSE file provided with the distribution for more information.
+ #include "BitSetTree.h"
+ class PharmerQuery;
+ 
++// Exact-search mode disables higher-order triplet bounds that are not conservative.
++bool skipGeometricPruning();
++
+ class QueryTripletFingerprint
+ {
+ 	//multi resolution search, first check bigqfingers (first DISTPACE), then if there is a match,
+diff --git a/src/Triplet.h b/src/Triplet.h
+index 1c95ff1..68a6a5a 100644
+--- a/src/Triplet.h
++++ b/src/Triplet.h
+@@ -1062,6 +1062,9 @@ public:
+ 	{
+ 		if (mybox.hasOverlap(box))
+ 		{
++			if (skipGeometricPruning())
++				return true;
++
+ 			//the two most likely culprits
+ 			if (distancejTooSmallForSmalli(0, box.maxx, 2, box.maxz))
+ 				return false;
+@@ -1119,6 +1122,10 @@ public:
+ 	//defined by the triplet
+ 	bool allInRange(const BoundingBox& box) const
+ 	{
++		// Force record-level independent-range and feature checks in exact mode.
++		if (skipGeometricPruning())
++			return false;
++
+ 		if(box.containedIn(mybox))
+ 		{
+ 			//additional checks, all coords in the box should be valid
+@@ -1221,7 +1228,7 @@ public:
+ 					return false;
+ 			}
+ 
+-			if (distancesAreBad(tdata.l1, tdata.l2, tdata.l3))
++			if (!skipGeometricPruning() && distancesAreBad(tdata.l1, tdata.l2, tdata.l3))
+ 				return false;
+ 
+ 			if(!skipfingers && !fingerprint.isValid(tdata.fingerprint))

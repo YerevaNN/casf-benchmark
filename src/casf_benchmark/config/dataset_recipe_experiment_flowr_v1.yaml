@@ -1,0 +1,44 @@
+experiment_id: dataset_recipe_experiment_v1
+output_dir: /mnt/weka/mbedrosian/code/casf-benchmark/data/results/dataset_recipe_experiment_v1
+sources: [qwen, loqi, flowr]
+budgets: [100, 500, 1000]
+radii: [0.5, 0.75, 1.0]
+cluster_radii: [0.5, 1.0]
+sampling_repeats: 20
+bootstrap_replicates: 2000
+seed: 20261118
+reference_cluster_radius: 0.5
+primary_gate: posebusters
+workers: 8
+flowr:
+  root: /mnt/weka/vtarasov/code/flowr_root
+  python: /mnt/weka/shared-cache/miniforge3/envs/flowr_root/bin/python
+  checkpoint: /mnt/weka/vtarasov/code/flowr_root/flowr_root_v2.2_mol.ckpt
+  target: 1000
+  max_attempts: 20000
+  batch_size: 256
+  relax_iterations: 200
+  integration_steps: 100
+  stereo_mode: strict
+panels:
+  plinder22:
+    source_config: src/casf_benchmark/config/pharmacophore_plinder22.yaml
+    methods:
+      qwen: qwen_1p7b_v2_coordtoken_step41054
+      loqi: loqi_druglike
+      flowr: flowr_druglike
+      rdkit_raw: rdkit_random_raw_druglike
+      rdkit_minimized: rdkit_random_minimized_22_druglike
+    completed_pools:
+      flowr: generation/flowr/plinder22_generation_results.pickle
+  atc48:
+    source_config: src/casf_benchmark/config/pharmacophore_plinder_atc48.yaml
+    methods:
+      qwen: qwen_1p7b_v2_coordtoken_step41054_atc48
+      loqi: loqi_atc48
+      flowr: flowr_atc48
+      rdkit_raw: rdkit_etkdg_raw_atc48
+      rdkit_minimized: rdkit_etkdg_mmff94s_atc48
+    completed_pools:
+      qwen: generation/qwen_atc48/qwen_completed_1000.pickle
+      flowr: generation/flowr/atc48_generation_results.pickle

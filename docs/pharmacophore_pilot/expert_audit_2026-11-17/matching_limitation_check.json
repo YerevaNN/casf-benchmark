@@ -1,0 +1,96 @@
+{
+  "status": "reproduced_false_negative",
+  "scope": "Synthetic typed feature points, not molecular-panel error-rate evidence",
+  "radius_angstrom": 0.5,
+  "numerical_tolerance_angstrom": 0.0002,
+  "types": [
+    "HydrogenDonor",
+    "HydrogenAcceptor",
+    "Hydrophobic",
+    "PositiveIon"
+  ],
+  "query_coordinates": [
+    [
+      -5.0,
+      -5.0,
+      0.0
+    ],
+    [
+      5.0,
+      -5.0,
+      0.0
+    ],
+    [
+      -5.0,
+      5.0,
+      0.0
+    ],
+    [
+      5.0,
+      5.0,
+      0.0
+    ]
+  ],
+  "candidate_coordinates": [
+    [
+      -4.1,
+      -5.0,
+      0.0
+    ],
+    [
+      5.0,
+      -5.0,
+      0.0
+    ],
+    [
+      -5.0,
+      5.0,
+      0.0
+    ],
+    [
+      5.0,
+      5.0,
+      0.0
+    ]
+  ],
+  "feasible_translation": [
+    -0.45,
+    0.0,
+    0.0
+  ],
+  "feasible_residuals": [
+    0.4500000000000002,
+    0.4500000000000002,
+    0.4500000000000002,
+    0.4500000000000002
+  ],
+  "kabsch_rotation": [
+    [
+      0.9997351932960746,
+      -0.02301180751832395,
+      0.0
+    ],
+    [
+      0.023011807518323928,
+      0.9997351932960746,
+      0.0
+    ],
+    [
+      0.0,
+      0.0,
+      1.0
+    ]
+  ],
+  "kabsch_translation": [
+    -0.2249404184916169,
+    0.00517765669162289,
+    0.0
+  ],
+  "kabsch_residuals": [
+    0.5700776476870136,
+    0.35817093995037924,
+    0.16101216898155551,
+    0.1572682052815521
+  ],
+  "implemented_matcher_hit": false
+}
